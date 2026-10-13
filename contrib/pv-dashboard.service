@@ -1,0 +1,32 @@
+# systemd-Unit. Annahme: Installation unter /opt/pv-dashboard, eigener Benutzer "pv".
+#   useradd --system --home /opt/pv-dashboard --shell /usr/sbin/nologin pv
+#   cp contrib/pv-dashboard.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now pv-dashboard
+[Unit]
+Description=PV-Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pv
+Group=pv
+WorkingDirectory=/opt/pv-dashboard
+ExecStart=/usr/bin/node /opt/pv-dashboard/main.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+# Schreibrechte nur fuer den Zustand (solardaily-state.json)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/pv-dashboard
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pv-dashboard
+
+[Install]
+WantedBy=multi-user.target

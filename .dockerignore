@@ -1,0 +1,11 @@
+.git
+.github
+node_modules
+reference
+test
+docs
+config.js
+config.local.json
+*-state.json
+*-state.json.tmp
+*.md
