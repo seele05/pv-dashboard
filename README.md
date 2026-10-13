@@ -59,6 +59,7 @@ Auf dem Handy die Seite öffnen und „Zum Home-Bildschirm“ wählen (Android/C
 | `title` | Titel in der Oberfläche | `PV-Anlage` |
 | `pollSeconds` | Abfrageintervall der Live-Werte | `30` |
 | `aggregateMinutes` | Intervall für Woche/Quartal/Jahr | `30` |
+| `forecastMinutes` | Intervall für die PV-Prognose | `5` |
 | `battery.capacityKwh` | nutzbare Akku-Kapazität | `10` |
 | `battery.minSoc` | Mindest-SOC (%) für die Restreichweite | `10` |
 | `display.maxPvW` / `maxLoadW` / `maxBatW` | Skalenendwerte der Leistungsbalken (W) | `10000` / `10000` / `5000` |
@@ -67,7 +68,7 @@ Auf dem Handy die Seite öffnen und „Zum Home-Bildschirm“ wählen (Android/C
 | `influx.token` | statt Benutzer/Passwort: `Authorization: Token …` (2.x-Kompatibilitäts-API) | – |
 | `measurements.soc/pv/load/battery` | Momentanwerte: SOC (%), PV, Last, Akku (W, Laden positiv) | – |
 | `measurements.grid` | Netzleistung (W, Bezug positiv) – nur für SolarDaily mit `input: 'influx'` | – |
-| `measurements.forecast` | PV-Prognose (W, ein Wert je Stunde in der Zukunft) – optional | – |
+| `measurements.forecast` | PV-Prognose (W, Werte mit zukünftigen Zeitstempeln, beliebiges Raster) – optional | – |
 | `measurements.daily.pv/load/grid/batIn/batOut` | Tageszähler in kWh (Reset 00:00) | – |
 | `solardaily.*` | siehe [SolarDaily](#solardaily) | aus |
 
@@ -80,8 +81,9 @@ Eine Seite, die sich an die Bildschirmbreite anpasst: einspaltig auf dem Handy, 
 - **Energiequelle & Akku** – Solar / Solar + Akku / Akku / Netz (Logik wie im bisherigen Widget), Ladezustand mit Reserve-Markierung, nutzbare kWh, Lade-/Entladerichtung
 - **Restreichweite** – „smarte“ Reichweite (Akku + Prognose gegen Ø-Verbrauch) mit Status *Morgen genug / Ausreichend / Niedrig / Kritisch*, dazu die reine Akku-Reichweite bei aktueller Last
 - **Leistung aktuell** – PV, Verbrauch, Akku, Prognose als Balken, Überschuss/Defizit
+- **PV-Prognose** – Ertrag morgen mit Spitzenleistung und Anteil am Ø-Tagesverbrauch; heute erwartet, bisher erzeugt, noch erwartet; gestern Prognose gegen Ist; Diagramm heute + morgen (Prognose und gemessene Leistung, mit Fadenkreuz) und Stundentabelle
 - **Heute** – PV, Verbrauch, Netzbezug, WR-Eigenverbrauch, Verbrauch nach Tageszeit (Nacht/Tag/Abend)
-- **Verbrauch im Vergleich** – Ø 30 Tage, heute und gestern im Vergleich zum Ø, PV-Prognose
+- **Verbrauch im Vergleich** – Ø 30 Tage, heute und gestern im Vergleich zum Ø
 - **Autarkie & Eigenverbrauch** – heute, 7 Tage, Quartal, Jahr
 
 Die Seite aktualisiert sich alle `pollSeconds`, pausiert im Hintergrund und zeigt ohne Verbindung den zuletzt geladenen Stand (deutlich als „Offline“ markiert). Der Service Worker hält nur die App-Hülle vor; API-Antworten werden nie aus dem Cache geliefert.
@@ -96,13 +98,14 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `GET /pv-data` | dasselbe unter dem Pfad des Node-RED-Flows (Übergangshilfe) |
 | `GET /api/status` | Modus, letzte Aktualisierung, Fehler, SolarDaily-Zähler |
 | `GET /api/meta` | Titel, Akku-Parameter, Balkenskalen, Intervall (ohne Zugangsdaten) |
+| `GET /api/forecast` | Prognose- und Ist-Kurve heute 00:00 bis übermorgen 00:00 (`forecast`, `actual` als `[ms, W]`), Tagesgrenzen, Prognose-Kennzahlen. `404` ohne `measurements.forecast` |
 
-`/api/pv` liefert dieselben Felder in derselben Reihenfolge wie bisher `/pv-data` (Beispiel: [`reference/sample/pv-data.example.json`](reference/sample/pv-data.example.json)). Fehlende Werte sind `null`.
+`/api/pv` liefert dieselben Felder in derselben Reihenfolge wie bisher `/pv-data` (Beispiel: [`reference/sample/pv-data.example.json`](reference/sample/pv-data.example.json)), danach sechs Prognose-Ergänzungen. Fehlende Werte sind `null`. **Geänderte Bedeutung:** `forecast_tomorrow_kwh` ist jetzt der Kalendertag morgen (0–24 Uhr), nicht mehr die nächsten 24 h.
 
 | Feld | Einheit | Bedeutung |
 |---|---|---|
-| `smart_range_label`, `smart_range_status` | – | Reichweite aus Akku + Prognose 24 h gegen Ø-Verbrauch; Status `infinite`/`ok`/`warn`/`crit` |
-| `forecast_tomorrow_kwh` | kWh | Summe der Prognosewerte der nächsten 24 h / 1000 |
+| `smart_range_label`, `smart_range_status` | – | Reichweite aus Akku + Prognose morgen gegen Ø-Verbrauch; Status `infinite`/`ok`/`warn`/`crit` |
+| `forecast_tomorrow_kwh` | kWh | Prognose morgen 0–24 Uhr (lokal), über die Zeit integriert |
 | `autarkie_heute`, `eigenverbrauch_heute` | % | Quoten aus den Tageszählern |
 | `autarkie_woche`, `eigenverbrauch_woche` | % | letzte 7 Tage |
 | `autarkie_season`, `eigenverbrauch_season` | % | seit Beginn des Kalenderquartals |
@@ -121,6 +124,10 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `delta_pct` | % | heutiger Verbrauch gegen Ø 30 Tage |
 | `kwh_nacht`, `kwh_tag`, `kwh_abend` | kWh | Verbrauch 0–6 Uhr, 6–17 Uhr, ab 17 Uhr |
 | `yesterday_kwh`, `delta_yesterday_pct` | kWh, % | Verbrauch gestern und Abweichung zum Ø |
+| `forecast_today_kwh` | kWh | Prognose heute 0–24 Uhr |
+| `forecast_today_remaining_kwh` | kWh | Prognose von jetzt bis Mitternacht |
+| `forecast_tomorrow_peak_w`, `forecast_tomorrow_peak_ts` | W, ISO 8601 | höchster Prognosewert morgen und Zeitpunkt |
+| `forecast_yesterday_kwh`, `actual_yesterday_kwh` | kWh | Prognose für gestern und tatsächliche PV-Erzeugung gestern (Tageszähler) |
 
 ## Berechnungen
 
@@ -132,7 +139,9 @@ Die Formeln sind 1:1 aus der Node-RED-Function „Berechnen + JSON Response“ u
 - **Nacht/Tag/Abend:** aus dem Verbrauchszähler um 06:00 und 17:00 (jeweils erster Wert im Fenster ± 15 min). Wie im Original gibt es den Tageswert erst ab 17 Uhr; die Oberfläche zeigt vorher den bisherigen Verbrauch seit 6 Uhr.
 - **Gestern:** vorletzter Tageswert > 1 kWh der 32-Tage-Reihe (wie im Original – ist heute noch ≤ 1 kWh, ist das der Vorvortag).
 
-Abfragen: pro Zyklus **eine** Mehrfach-Query (Momentanwerte, Tageszähler, Prognose, 32-Tage-Reihe, Anker), alle `aggregateMinutes` **eine** weitere mit drei 366-Tage-Reihen für Woche/Quartal/Jahr. Tagesreihen nutzen `GROUP BY time(1d) … tz('<timezone>')`, die Tagesgrenze ist damit ganzjährig die lokale Mitternacht.
+- **PV-Prognose:** Die Prognosewerte werden über ihre Zeitstempel integriert (Trapez, an Tagesgrenzen linear interpoliert; Abschnitte über 2 h ohne Werte zählen nicht). Das ist unabhängig vom Raster des Prognosedienstes: Der ioBroker-Adapter *pvforecast* schreibt `summary.power` mit zukünftigen Zeitstempeln im Raster des Dienstes, z. B. stündlich, 30 min (Solcast) oder 15 min. Das Original rechnete `sum(value) / 1000`, das stimmt nur bei genau einem Wert pro Stunde und ergibt bei 30-min-Werten das Doppelte.
+
+Abfragen: pro Zyklus **eine** Mehrfach-Query (Momentanwerte, Tageszähler, Prognose, 32-Tage-Reihe, Anker), alle `aggregateMinutes` **eine** weitere mit drei 366-Tage-Reihen für Woche/Quartal/Jahr, alle `forecastMinutes` **eine** für die Prognose (Rohwerte gestern bis übermorgen, PV-Leistung heute als 15-min-Mittel, PV-Erzeugung gestern). Tagesreihen nutzen `GROUP BY time(1d) … tz('<timezone>')`, die Tagesgrenze ist damit ganzjährig die lokale Mitternacht.
 
 ## SolarDaily
 
@@ -194,6 +203,7 @@ Das bisherige Original (Node-RED-Tab, Widget, ioBroker-Skript) liegt unveränder
 | 25 Einzelabfragen je Aufruf | 1 Mehrfach-Query je Zyklus + 1 alle 30 min | Last auf InfluxDB |
 | Berechnung je HTTP-Aufruf | Berechnung je Zyklus, Antwort aus dem Speicher | beliebig viele Clients ohne Zusatzlast |
 | Anker 22:00 abgefragt, aber nicht verwendet; Prognose-Summe doppelt abgefragt | entfällt | – |
+| `forecast_tomorrow_kwh` = `sum(value)/1000` der nächsten 24 h | Kalendertag morgen 0–24 Uhr, über die Zeit integriert | richtig bei jedem Raster; „morgen“ heißt morgen. Die smarte Reichweite rechnet damit ebenfalls mit dem morgigen Tag |
 | Widget-Beschriftung „Nacht 22–06“, „Abend 17–22“ | „Nacht 0–6 Uhr“, „Abend ab 17 Uhr“ | entspricht der tatsächlichen Berechnung (Zähler startet um 0 Uhr, Abend läuft bis jetzt) |
 | Google Fonts | System-Schriften | keine externen Requests |
 

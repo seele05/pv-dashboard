@@ -79,6 +79,37 @@
       <div class="sub-line muted num" id="netLine"></div>
     </section>
 
+    <!-- PV-Prognose -->
+    <section class="card wide" id="fcCard" aria-labelledby="h-fc" hidden>
+      <h2 id="h-fc">PV-Prognose</h2>
+      <div class="fc-head">
+        <div class="fc-main">
+          <div class="fc-label">Morgen</div>
+          <div class="fc-big num" id="fcTomorrow">–</div>
+          <div class="muted num" id="fcPeak"></div>
+          <div class="fc-cover num" id="fcCover" hidden></div>
+        </div>
+        <dl class="kv num fc-stats">
+          <div><dt>Heute erwartet</dt><dd id="fcToday">–</dd></div>
+          <div><dt>Heute bisher erzeugt</dt><dd id="fcTodayActual">–</dd></div>
+          <div><dt>Heute noch erwartet</dt><dd id="fcTodayRest">–</dd></div>
+          <div><dt>Gestern: Prognose → Ist</dt><dd id="fcYesterday">–</dd></div>
+        </dl>
+      </div>
+      <div class="fc-chart" id="fcChart" role="img" aria-label="PV-Prognose und tatsächliche Leistung, heute und morgen">
+        <div class="fc-tip" id="fcTip" hidden></div>
+      </div>
+      <ul class="legend legend-inline">
+        <li><i class="sw sw-fc" aria-hidden="true"></i>Prognose</li>
+        <li><i class="sw sw-pv" aria-hidden="true"></i>Ist (Mittel je 15 min)</li>
+      </ul>
+      <details class="fc-table">
+        <summary>Stundenwerte als Tabelle</summary>
+        <div class="table-wrap" id="fcTable"></div>
+      </details>
+      <p class="hint muted">Prognose über die tatsächlichen Zeitpunkte integriert. Bei vollem Akku regelt eine Inselanlage die PV-Leistung ab – das Ist liegt dann unter der Prognose, ohne dass die Prognose falsch war.</p>
+    </section>
+
     <!-- Heute -->
     <section class="card" aria-labelledby="h-today">
       <h2 id="h-today">Heute</h2>
@@ -105,7 +136,6 @@
         <div><dt>Heute bisher vs. Ø</dt><dd id="cToday">–</dd></div>
         <div><dt>Gestern</dt><dd id="cYest">–</dd></div>
         <div><dt>Gestern vs. Ø</dt><dd id="cYestDelta">–</dd></div>
-        <div><dt>PV-Prognose 24 h</dt><dd id="cFc">–</dd></div>
       </dl>
     </section>
 
