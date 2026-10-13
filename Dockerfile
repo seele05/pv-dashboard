@@ -17,6 +17,10 @@ COPY web ./web
 RUN mkdir -p /app/data && chown node:node /app/data
 VOLUME /app/data
 
+# Build-Commit (Kurz-Hash), von der CI per --build-arg gesetzt; erscheint in der Fusszeile
+ARG GIT_REVISION=
+ENV GIT_REVISION=$GIT_REVISION
+
 USER node
 EXPOSE 8080
 
