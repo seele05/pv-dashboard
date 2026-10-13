@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PV-Dashboard</title>
+  <meta name="description" content="Übersicht der PV-Anlage: Leistung, Akku, Reichweite, Tageswerte und Autarkie">
+  <meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0f12" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PV">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img src="/icons/icon.svg" alt="" width="28" height="28">
+      <h1 id="title">PV-Dashboard</h1>
+    </div>
+    <div class="live" id="live" role="status" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span><span id="liveText">Lade …</span>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <main class="grid">
+    <!-- Energiequelle + Akku -->
+    <section class="card source" aria-labelledby="h-source">
+      <h2 id="h-source">Energiequelle &amp; Akku</h2>
+      <div class="source-row">
+        <div class="source-icon" id="srcIcon" aria-hidden="true">–</div>
+        <div class="source-text">
+          <div class="source-label" id="srcLabel">–</div>
+          <div class="muted" id="srcSub">–</div>
+        </div>
+        <div class="soc-ring" id="socRing" role="img" aria-label="Akkustand">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle class="ring-track" cx="32" cy="32" r="27"></circle>
+            <circle class="ring-fill" id="socArc" cx="32" cy="32" r="27"></circle>
+          </svg>
+          <div class="soc-text"><b id="socVal">–</b><small>Akku</small></div>
+        </div>
+      </div>
+      <div class="track track-lg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Ladezustand" id="socTrack"><span class="fill" id="socBar"></span><span class="min-mark" id="minMark"></span></div>
+      <div class="bat-meta muted num"><span id="batAvail">–</span><span id="batState">–</span><span id="minSocText"></span></div>
+    </section>
+
+    <!-- Restreichweite -->
+    <section class="card" aria-labelledby="h-range">
+      <h2 id="h-range">Restreichweite</h2>
+      <div class="range">
+        <div class="range-big num" id="rangeVal">–</div>
+        <div class="range-info">
+          <span class="badge" id="rangeBadge"></span>
+          <div class="muted num" id="rangeNet">–</div>
+          <div class="muted num" id="rangeAvail">–</div>
+        </div>
+      </div>
+      <div class="sub-line muted num" id="rangePlain"></div>
+    </section>
+
+    <!-- Leistung -->
+    <section class="card" aria-labelledby="h-power">
+      <h2 id="h-power">Leistung aktuell</h2>
+      <div class="meter-list">
+        <div class="meter"><span class="key"><i class="sw sw-pv" aria-hidden="true"></i>Solar</span><span class="val num" id="pvVal">–</span><div class="track"><span class="fill fill-pv" id="pvBar"></span></div></div>
+        <div class="meter"><span class="key"><i class="sw sw-load" aria-hidden="true"></i>Verbrauch</span><span class="val num" id="loadVal">–</span><div class="track"><span class="fill fill-load" id="loadBar"></span></div></div>
+        <div class="meter"><span class="key"><i class="sw sw-bat" aria-hidden="true"></i>Akku <small class="muted" id="batDir"></small></span><span class="val num" id="batVal">–</span><div class="track"><span class="fill fill-bat" id="batBar"></span></div></div>
+        <div class="meter sep"><span class="key"><i class="sw sw-fc" aria-hidden="true"></i>Prognose</span><span class="val num" id="fcVal">–</span><div class="track"><span class="fill fill-fc" id="fcBar"></span></div></div>
+      </div>
+      <div class="sub-line muted num" id="netLine"></div>
+    </section>
+
+    <!-- Heute -->
+    <section class="card" aria-labelledby="h-today">
+      <h2 id="h-today">Heute</h2>
+      <dl class="kv num">
+        <div><dt>PV erzeugt</dt><dd id="dPv">–</dd></div>
+        <div><dt>Verbrauch</dt><dd id="dLoad">–</dd></div>
+        <div><dt>Netzbezug</dt><dd id="dGrid">–</dd></div>
+        <div><dt>WR-Eigenverbrauch</dt><dd id="dWr">–</dd></div>
+      </dl>
+      <h3>Verbrauch nach Tageszeit</h3>
+      <div class="stack" id="splitBar" role="img" aria-label="Verbrauch nach Tageszeit"></div>
+      <ul class="legend num" id="splitLegend">
+        <li><i class="sw sw-night" aria-hidden="true"></i>Nacht 0–6 Uhr<b id="dNight">–</b></li>
+        <li><i class="sw sw-day" aria-hidden="true"></i><span id="lDay">Tag 6–17 Uhr</span><b id="dDay">–</b></li>
+        <li><i class="sw sw-eve" aria-hidden="true"></i>Abend ab 17 Uhr<b id="dEve">–</b></li>
+      </ul>
+    </section>
+
+    <!-- Vergleich -->
+    <section class="card" aria-labelledby="h-cmp">
+      <h2 id="h-cmp">Verbrauch im Vergleich</h2>
+      <dl class="kv num">
+        <div><dt>Ø 30 Tage</dt><dd id="cAvg">–</dd></div>
+        <div><dt>Heute bisher vs. Ø</dt><dd id="cToday">–</dd></div>
+        <div><dt>Gestern</dt><dd id="cYest">–</dd></div>
+        <div><dt>Gestern vs. Ø</dt><dd id="cYestDelta">–</dd></div>
+        <div><dt>PV-Prognose 24 h</dt><dd id="cFc">–</dd></div>
+      </dl>
+    </section>
+
+    <!-- Quoten -->
+    <section class="card" aria-labelledby="h-quote">
+      <h2 id="h-quote">Autarkie &amp; Eigenverbrauch</h2>
+      <div class="quotes num" id="quotes" role="table" aria-label="Autarkie und Eigenverbrauch je Zeitraum"></div>
+      <p class="hint muted">Autarkie = Anteil des Verbrauchs ohne Netzbezug. Eigenverbrauch = Verbrauch im Verhältnis zur PV-Erzeugung (wie im bisherigen Dashboard), auf 100 % begrenzt.</p>
+    </section>
+  </main>
+
+  <footer class="foot muted" id="foot"></footer>
+</body>
+</html>

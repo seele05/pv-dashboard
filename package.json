@@ -1,0 +1,19 @@
+{
+  "name": "pv-dashboard",
+  "version": "1.0.0",
+  "description": "Übersicht für PV-/Akku-Anlagen: PWA, JSON-API und Tages-/Gesamtzähler (SolarDaily), liest aus InfluxDB 1.x",
+  "main": "main.js",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node main.js",
+    "mock": "node main.js --mock",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "mqtt": "^5.15.2"
+  }
+}
