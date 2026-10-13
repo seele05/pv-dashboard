@@ -43,10 +43,10 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 });
 
 
-test('Felder und Reihenfolge entsprechen reference/sample/pv-data.example.json', () => {
+test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), Object.keys(sample));
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh']]);
 });
 
 

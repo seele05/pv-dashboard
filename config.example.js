@@ -16,9 +16,10 @@ module.exports = {
     // Titel in der Oberflaeche
     title: 'PV-Anlage',
 
-    // Live-Werte alle n Sekunden abfragen; Woche/Quartal/Jahr alle n Minuten
+    // Live-Werte alle n Sekunden abfragen; Woche/Quartal/Jahr und PV-Prognose alle n Minuten
     pollSeconds: 30,
     aggregateMinutes: 30,
+    forecastMinutes: 5,
 
     // Akku: nutzbare Kapazitaet und Mindest-SOC fuer die Restreichweite
     battery: {
@@ -65,7 +66,7 @@ module.exports = {
         load: 'load_power',             // W
         battery: 'battery_power',       // W, Laden positiv
         grid: 'grid_power',             // W, Bezug positiv (nur fuer SolarDaily mit input 'influx')
-        forecast: 'pv_forecast_power',  // W, Prognosewerte in der Zukunft (ein Wert je Stunde)
+        forecast: 'pv_forecast_power',  // W, Prognosewerte mit zukuenftigen Zeitstempeln (beliebiges Raster)
         daily: {                        // kWh, Tageszaehler mit Reset um 00:00
             pv: 'daily_pv_production',
             load: 'daily_load_consumption',

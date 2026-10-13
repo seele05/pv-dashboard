@@ -81,7 +81,6 @@ test('Live-Zyklus: eine Mehrfach-Query, lokale Ankerfenster, tz()-Tagesbuckets, 
         if (q.includes('"load"')) return [[now, 2000]];
         if (q.includes('"bat"')) return [[now, -1900]];
         if (q.includes('last("value")') && q.includes('"fc"')) return null;     // keine aktuelle Prognose
-        if (q.includes('sum("value")')) return [[now, 4500]];
         if (q.includes('GROUP BY time(1d)')) return Array.from({ length: 33 }, (_, i) => [now - (32 - i) * 86400_000, i === 32 ? 9 : 10]);
         if (q.includes('first("value")') && q.includes('04:45:00')) return [[now, 3.2]];
         if (q.includes('first("value")') && q.includes('15:45:00')) return [[now, 8.1]];
@@ -118,7 +117,7 @@ test('Live-Zyklus: eine Mehrfach-Query, lokale Ankerfenster, tz()-Tagesbuckets, 
         assert.equal(d.load_w, 2000);
         assert.equal(d.bat_w, -1900);
         assert.equal(d.forecast_w, null);
-        assert.equal(d.forecast_tomorrow_kwh, 4.5);
+        assert.ok(!q.includes('sum("value")'), 'Prognosesumme nicht mehr im Live-Zyklus');
         assert.equal(d.daily_load_kwh, 9);
         assert.equal(d.daily_bat_out, -3);
         assert.equal(d.avg_rows.length, 33);
@@ -242,4 +241,38 @@ test('Konfiguration: Pflichtfelder ausserhalb des Mock-Modus', () => {
     assert.ok(validate(deepMerge(DEFAULTS, { mock: true, timezone: 'Mars/Olympus' }))[0].startsWith('timezone'));
     const sd = validate(deepMerge(DEFAULTS, { influx: { db: 'x' }, measurements: M, solardaily: { enabled: true, input: 'mqtt' } }));
     assert.deepEqual(sd, ['solardaily.mqtt.url fehlt']);
+});
+
+
+test('Prognose-Zyklus: Rohwerte gestern bis uebermorgen (lokal), Ist als 15-min-Mittel, integriert', async () => {
+    const { zonedToUtc } = require('../lib/time');
+    const TZ = 'Europe/Berlin';
+    const now = zonedToUtc(2026, 6, 15, 12, 0, 0, TZ);
+    // morgen konstant 1000 W von 08:00 bis 18:00 im 30-min-Raster -> 10 kWh (Original sum/1000: 21)
+    const pts = [];
+    for (let t = zonedToUtc(2026, 6, 16, 8, 0, 0, TZ); t <= zonedToUtc(2026, 6, 16, 18, 0, 0, TZ); t += 1_800_000) pts.push([t, 1000]);
+    const fake = await fakeInflux(q => {
+        if (q.includes('"fc"')) return pts;
+        if (q.includes('mean("value")')) return [[now - 900_000, 750]];
+        if (q.includes('"d.pv"')) return [[now - 86400_000, 18.25]];
+        return null;
+    });
+    try {
+        const cfg = cfgWith(fake.url);
+        const src = new InfluxSource(cfg, new InfluxClient(cfg.influx));
+        const { summary, chart, errors } = await src.forecast(now);
+        const q = new URLSearchParams(fake.requests[0].body).get('q');
+        // 14.06. 00:00 MESZ = 13.06. 22:00 UTC; 17.06. 00:00 MESZ = 16.06. 22:00 UTC
+        assert.match(q, /FROM "testdb"\."autogen"\."fc" WHERE time >= '2026-06-13T22:00:00\.000Z' AND time < '2026-06-16T22:00:00\.000Z'/);
+        assert.match(q, /GROUP BY time\(15m\) fill\(none\) tz\('Europe\/Berlin'\)/);
+        assert.deepEqual(errors, []);
+        assert.equal(summary.forecast_tomorrow_kwh, 10);
+        assert.equal(summary.forecast_tomorrow_peak_w, 1000);
+        assert.equal(summary.forecast_today_kwh, null);
+        assert.equal(summary.actual_yesterday_kwh, 18.25);
+        assert.equal(chart.forecast.length, pts.length);
+        assert.deepEqual(chart.actual, [[now - 900_000, 750]]);
+    } finally {
+        await fake.close();
+    }
 });

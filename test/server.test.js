@@ -30,7 +30,8 @@ test('Mock-Modus: /api/pv liefert alle Felder der Beispielantwort mit passenden 
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('access-control-allow-origin'), '*');
         const body = await res.json();
-        assert.deepEqual(Object.keys(body), Object.keys(sample));
+        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh']];
+        assert.deepEqual(Object.keys(body), expected);
         for (const [k, v] of Object.entries(sample)) {
             if (v === null || body[k] === null) continue;
             assert.equal(typeof body[k], typeof v, `Typ von ${k}`);
@@ -38,7 +39,13 @@ test('Mock-Modus: /api/pv liefert alle Felder der Beispielantwort mit passenden 
 
         // Kompatibilitaets-Pfad des Node-RED-Flows
         const legacy = await (await fetch(base + '/pv-data')).json();
-        assert.deepEqual(Object.keys(legacy), Object.keys(sample));
+        assert.deepEqual(Object.keys(legacy), expected);
+
+        // Prognose-Kurven
+        const fc = await (await fetch(base + '/api/forecast')).json();
+        assert.ok(fc.forecast.length > 0 && Array.isArray(fc.actual));
+        assert.ok(fc.from < fc.midnight && fc.midnight < fc.to);
+        assert.equal(body.forecast_tomorrow_kwh, Math.round(fc.forecast_tomorrow_kwh * 10) / 10);
     });
 });
 
