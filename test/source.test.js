@@ -175,21 +175,35 @@ test('HTTP-Fehler und Nicht-JSON werden als Fehler geworfen', async () => {
 });
 
 
-test('Aggregate: 3 Tagesreihen ueber 366 Tage, Quoten berechnet', async () => {
+test('Aggregate: 3 Tagesreihen ueber 366 Tage + Lastprofil 14 Tage in einer Abfrage', async () => {
     const now = Date.parse('2026-05-10T10:00:00Z');
     const fake = await fakeInflux(q => {
+        if (q.includes('GROUP BY time(1h)')) {
+            // Stundenmittel: nachts 250 W, sonst 800 W (lokale Stunde)
+            const { localParts } = require('../lib/time');
+            return Array.from({ length: 14 * 24 }, (_, i) => {
+                const t = now - (14 * 24 - i) * 3_600_000;
+                const h = localParts(t, 'Europe/Berlin').hour;
+                return [t, h < 6 ? 250 : 800];
+            });
+        }
         const v = q.includes('"d.load"') ? 10 : q.includes('"d.pv"') ? 20 : 2;
         return Array.from({ length: 367 }, (_, i) => [now - (366 - i) * 86400_000, v]);
     });
     try {
         const cfg = cfgWith(fake.url);
         const src = new InfluxSource(cfg, new InfluxClient(cfg.influx));
-        const { quoten } = await src.aggregates(now);
+        const { quoten, loadProfile, errors } = await src.aggregates(now);
+        assert.equal(fake.requests.length, 1);
         const q = new URLSearchParams(fake.requests[0].body).get('q');
-        assert.equal(q.split(';\n').length, 3);
+        assert.equal(q.split(';\n').length, 4);
         assert.match(q, /now\(\) - 366d GROUP BY time\(1d\) fill\(null\) tz\('Europe\/Berlin'\)/);
+        assert.match(q, /FROM "testdb"\."autogen"\."load" WHERE time >= now\(\) - 14d GROUP BY time\(1h\) fill\(none\) tz\('Europe\/Berlin'\)/);
+        assert.deepEqual(errors, []);
         assert.deepEqual(quoten.woche, { aut: 80, ev: 50 });
         assert.deepEqual(quoten.jahr, { aut: 80, ev: 50 });
+        assert.equal(loadProfile[2], 250);
+        assert.equal(loadProfile[20], 800);
     } finally {
         await fake.close();
     }
@@ -272,6 +286,21 @@ test('Prognose-Zyklus: Rohwerte gestern bis uebermorgen (lokal), Ist als 15-min-
         assert.equal(summary.actual_yesterday_kwh, 18.25);
         assert.equal(chart.forecast.length, pts.length);
         assert.deepEqual(chart.actual, [[now - 900_000, 750]]);
+    } finally {
+        await fake.close();
+    }
+});
+
+
+test('Aggregate ohne Tagesreihen: nur Lastprofil, Quoten null', async () => {
+    const fake = await fakeInflux(() => [[0, 500]]);
+    try {
+        const cfg = deepMerge(cfgWith(fake.url), { measurements: { daily: { load: '', pv: '', grid: '' } } });
+        const src = new InfluxSource(cfg, new InfluxClient(cfg.influx));
+        const { quoten, loadProfile } = await src.aggregates(Date.now());
+        assert.equal(new URLSearchParams(fake.requests[0].body).get('q').split(';\n').length, 1);
+        assert.equal(quoten, null);
+        assert.equal(loadProfile.length, 24);
     } finally {
         await fake.close();
     }

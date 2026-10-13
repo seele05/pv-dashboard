@@ -30,7 +30,7 @@ test('Mock-Modus: /api/pv liefert alle Felder der Beispielantwort mit passenden 
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('access-control-allow-origin'), '*');
         const body = await res.json();
-        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh']];
+        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis']];
         assert.deepEqual(Object.keys(body), expected);
         for (const [k, v] of Object.entries(sample)) {
             if (v === null || body[k] === null) continue;
