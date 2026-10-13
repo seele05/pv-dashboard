@@ -1,0 +1,26 @@
+# Baut das Container-Image bei jedem Push auf main und legt es in der Paket-Registry
+# der Gitea-Instanz ab (Tags: Kurz-Hash des Commits und latest). Registry-Host und
+# Image-Name werden aus der Instanz-URL und dem Repo abgeleitet; benoetigt das
+# Repo-Secret REGISTRY_TOKEN (Token mit Recht write:package).
+name: build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image bauen und pushen
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          set -eu
+          REGISTRY="${GITHUB_SERVER_URL#*://}"
+          IMAGE="$REGISTRY/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          TAG="$(echo "$GITHUB_SHA" | cut -c1-7)"
+          echo "$REGISTRY_TOKEN" | docker login "$REGISTRY" -u "$GITHUB_REPOSITORY_OWNER" --password-stdin
+          docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE:latest"
