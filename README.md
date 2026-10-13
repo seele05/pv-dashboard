@@ -49,7 +49,7 @@ Auf dem Handy die Seite öffnen und „Zum Home-Bildschirm“ wählen (Android/C
 
 ## Konfiguration
 
-`config.js` (Vorlage: [`config.example.js`](config.example.js), alle Werte dort sind Platzhalter). Nicht gesetzte Schlüssel übernehmen die Defaults aus `lib/config.js`; eine optionale `config.local.json` überschreibt `config.js`. Beim Start wird die Konfiguration geprüft, Fehler werden mit Klartext gemeldet.
+`config.js` (Vorlage: [`config.example.js`](config.example.js), alle Werte dort sind Platzhalter). Nicht gesetzte Schlüssel übernehmen die Defaults aus `lib/config.js`; eine optionale `config.local.json` überschreibt `config.js`. Zuletzt wird die Umgebungsvariable `CONFIG_JSON` (JSON mit denselben Schlüsseln) darübergelegt; ist sie gesetzt, darf `config.js` fehlen – praktisch für Container ohne eingebundene Datei. Beim Start wird die Konfiguration geprüft, Fehler werden mit Klartext gemeldet.
 
 | Schlüssel | Bedeutung | Default |
 |---|---|---|
@@ -164,7 +164,7 @@ cp config.example.js config.js     # anpassen
 docker compose up -d --build
 ```
 
-`config.js` wird schreibgeschützt eingebunden, der Zustand liegt im Volume `/app/data`. Zum Ausprobieren ohne InfluxDB in `docker-compose.yml` die Zeile `command: ["node", "main.js", "--mock"]` aktivieren.
+`config.js` wird schreibgeschützt eingebunden, der Zustand liegt im Volume `/app/data`. Zum Ausprobieren ohne InfluxDB in `docker-compose.yml` die Zeile `command: ["node", "main.js", "--mock"]` aktivieren. Statt `config.js` einzubinden, kann die Konfiguration auch als `CONFIG_JSON` im `environment` stehen.
 
 **systemd:** Unit in [`contrib/pv-dashboard.service`](contrib/pv-dashboard.service) (Installation unter `/opt/pv-dashboard`, eigener Benutzer `pv`, Schreibrechte nur im Programmverzeichnis).
 
@@ -207,7 +207,7 @@ node main.js --mock      # Oberfläche mit erfundenen Daten
 ```
 main.js              Einstieg (CLI, Signale)
 lib/app.js           Verdrahtung: Zyklen, SolarDaily, Server
-lib/config.js        Defaults, config.js + config.local.json, Prüfung
+lib/config.js        Defaults, config.js + config.local.json + CONFIG_JSON, Prüfung
 lib/metrics.js       Kennzahlen (Port der Node-RED-Functions)
 lib/solardaily.js    Tages-/Gesamtzähler
 lib/inputs.js        SolarDaily-Eingänge (MQTT, InfluxDB)
