@@ -37,6 +37,16 @@
     $(id).style.width = pct.toFixed(1) + '%';
   }
 
+  // Uhrzeiten in der Zeitzone der Anlage (aus /api/meta), nicht der des Browsers
+  const timeHM = ts => new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: meta.timezone || undefined });
+  const dayKey = ts => new Date(ts).toLocaleDateString('en-CA', { timeZone: meta.timezone || undefined });
+  /** "heute 23:40", "morgen 07:15" oder Datum. */
+  function dayTime(ts) {
+    const k = dayKey(ts), today = dayKey(Date.now()), tomorrow = dayKey(Date.now() + 86_400_000);
+    const day = k === today ? 'heute' : k === tomorrow ? 'morgen' : new Date(ts).toLocaleDateString('de-DE', { weekday: 'short', timeZone: meta.timezone || undefined });
+    return day + ' gegen ' + timeHM(ts) + ' Uhr';
+  }
+
   /* ---------- Fachlogik der Anzeige (aus dem bisherigen Widget) ---------- */
   function socStatus(soc) {
     if (!isNum(soc)) return 'var(--track)';
@@ -58,7 +68,9 @@
     return { icon: '🔌', cls: 'grid', label: 'Netz', sub: 'Netzbetrieb' };
   }
 
-  const RANGE_TEXT = { infinite: 'Morgen genug', ok: 'Ausreichend', warn: 'Niedrig', crit: 'Kritisch' };
+  const RANGE_TEXT = { infinite: 'Reicht bis Ende morgen', ok: 'Ausreichend', warn: 'Niedrig', crit: 'Kritisch' };
+  const PLAIN_TEXT = { infinite: 'kein Defizit', ok: 'Ausreichend', warn: 'Niedrig', crit: 'Kritisch' };
+  const BASIS_TEXT = { lastprofil: 'Lastprofil der letzten 14 Tage', durchschnitt: 'Ø-Verbrauch 30 Tage', aktuelle_last: 'aktuelle Last' };
   const DIR_TEXT = { charging: '↑ lädt', discharging: '↓ entlädt', idle: '– Ruhe' };
   const PERIODS = [['heute', 'Heute'], ['woche', '7 Tage'], ['season', 'Quartal'], ['jahr', 'Jahr']];
 
@@ -79,17 +91,22 @@
     setText('socVal', isNum(d.soc) ? NF0.format(d.soc) + ' %' : '–');
     $('socRing').setAttribute('aria-label', 'Akkustand ' + (isNum(d.soc) ? NF0.format(d.soc) + ' Prozent' : 'unbekannt'));
 
-    // Reichweite (smart = Akku + Prognose gegen Ø 30 Tage)
+    // Smarte Reichweite = Energiebilanz bis Ende morgen (Akku + PV-Prognose - erwarteter Verbrauch)
     const st = d.smart_range_status || d.range_status || 'ok';
     setText('rangeVal', deLabel(d.smart_range_label || d.range_label));
     const badge = $('rangeBadge');
     badge.className = 'badge ' + st;
     setText('rangeBadge', RANGE_TEXT[st] || '');
-    setText('rangeNet', isNum(d.net_kw) ? 'Bilanz ' + signed(d.net_kw, v => NF2.format(v)) + ' kW' : 'Bilanz –');
-    setText('rangeAvail', (isNum(d.avail_kwh) ? NF1.format(d.avail_kwh) + ' kWh im Akku' : '–') +
-      (isNum(d.forecast_tomorrow_kwh) ? ' · Prognose morgen ~' + NF0.format(d.forecast_tomorrow_kwh) + ' kWh' : ''));
-    setText('rangePlain', 'Nur Akku bei aktueller Last: ' + deLabel(d.range_label) +
-      (d.range_status && d.range_status !== 'infinite' ? ' (' + (RANGE_TEXT[d.range_status] || '') + ')' : ''));
+    setText('rangeNet', d.smart_range_empty_ts
+      ? 'Akku leer ' + dayTime(d.smart_range_empty_ts)
+      : (isNum(d.net_kw) ? 'Bilanz jetzt ' + signed(d.net_kw, v => NF2.format(v)) + ' kW' : '–'));
+    setText('rangeAvail', (isNum(d.avail_kwh) ? NF1.format(Math.max(0, d.avail_kwh)) + ' kWh im Akku' : '–') +
+      (!d.smart_range_empty_ts && isNum(d.smart_range_min_kwh) && d.smart_range_min_ts
+        ? ' · tiefster Stand ' + NF1.format(d.smart_range_min_kwh) + ' kWh ' + dayTime(d.smart_range_min_ts) : ''));
+    setText('rangePlain', (d.smart_range_basis
+      ? 'Gerechnet mit PV-Prognose und ' + BASIS_TEXT[d.smart_range_basis] + '. '
+      : '') + 'Nur Akku bei aktueller Last: ' + deLabel(d.range_label) +
+      (d.range_status ? ' (' + PLAIN_TEXT[d.range_status] + ')' : ''));
 
     // Leistung
     const disp = meta.display;
@@ -158,8 +175,6 @@
   }
 
   /* ---------- PV-Prognose ---------- */
-  // Uhrzeiten in der Zeitzone der Anlage (aus /api/meta), nicht der des Browsers
-  const timeHM = ts => new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: meta.timezone || undefined });
 
   function renderForecastStats(d) {
     const card = $('fcCard');
@@ -174,7 +189,7 @@
       const pct = d.forecast_tomorrow_kwh / d.avg_30d_kwh * 100;
       cover.hidden = false;
       cover.style.setProperty('--cover', pct >= 100 ? 'var(--ok)' : pct >= 60 ? 'var(--warn)' : 'var(--crit)');
-      setText('fcCover', NF0.format(pct) + ' % des Ø-Tagesverbrauchs' + (pct >= 100 ? ' – reicht' : pct >= 60 ? ' – knapp' : ' – zu wenig'));
+      setText('fcCover', 'PV-Ertrag ≈ ' + NF0.format(pct) + ' % des Ø-Tagesverbrauchs');
     } else {
       cover.hidden = true;
     }

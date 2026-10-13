@@ -79,7 +79,7 @@ Je Messgröße wird ein Measurement mit Feld `value` erwartet (Schema des ioBrok
 Eine Seite, die sich an die Bildschirmbreite anpasst: einspaltig auf dem Handy, zwei Spalten auf dem Tablet, drei auf dem Desktop.
 
 - **Energiequelle & Akku** – Solar / Solar + Akku / Akku / Netz (Logik wie im bisherigen Widget), Ladezustand mit Reserve-Markierung, nutzbare kWh, Lade-/Entladerichtung
-- **Restreichweite** – „smarte“ Reichweite (Akku + Prognose gegen Ø-Verbrauch) mit Status *Morgen genug / Ausreichend / Niedrig / Kritisch*, dazu die reine Akku-Reichweite bei aktueller Last
+- **Restreichweite** – „smarte“ Reichweite als Energiebilanz bis Ende morgen (Akku + PV-Prognose − erwarteter Verbrauch) mit Zeitpunkt „Akku leer“ bzw. tiefstem Akkustand und Status *Reicht bis Ende morgen / Ausreichend / Niedrig / Kritisch*, dazu die reine Akku-Reichweite bei aktueller Last
 - **Leistung aktuell** – PV, Verbrauch, Akku, Prognose als Balken, Überschuss/Defizit
 - **PV-Prognose** – Ertrag morgen mit Spitzenleistung und Anteil am Ø-Tagesverbrauch; heute erwartet, bisher erzeugt, noch erwartet; gestern Prognose gegen Ist; Diagramm heute + morgen (Prognose und gemessene Leistung, mit Fadenkreuz) und Stundentabelle
 - **Heute** – PV, Verbrauch, Netzbezug, WR-Eigenverbrauch, Verbrauch nach Tageszeit (Nacht/Tag/Abend)
@@ -104,7 +104,7 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 
 | Feld | Einheit | Bedeutung |
 |---|---|---|
-| `smart_range_label`, `smart_range_status` | – | Reichweite aus Akku + Prognose morgen gegen Ø-Verbrauch; Status `infinite`/`ok`/`warn`/`crit` |
+| `smart_range_label`, `smart_range_status` | – | Reichweite aus der Energiebilanz bis Ende morgen (siehe [Berechnungen](#berechnungen)); `∞`/`infinite`, wenn der Akku durchhält, sonst Stunden bis leer mit Status `ok`/`warn`/`crit` (leer vor Ende morgen: mindestens `warn`) |
 | `forecast_tomorrow_kwh` | kWh | Prognose morgen 0–24 Uhr (lokal), über die Zeit integriert |
 | `autarkie_heute`, `eigenverbrauch_heute` | % | Quoten aus den Tageszählern |
 | `autarkie_woche`, `eigenverbrauch_woche` | % | letzte 7 Tage |
@@ -128,12 +128,17 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `forecast_today_remaining_kwh` | kWh | Prognose von jetzt bis Mitternacht |
 | `forecast_tomorrow_peak_w`, `forecast_tomorrow_peak_ts` | W, ISO 8601 | höchster Prognosewert morgen und Zeitpunkt |
 | `forecast_yesterday_kwh`, `actual_yesterday_kwh` | kWh | Prognose für gestern und tatsächliche PV-Erzeugung gestern (Tageszähler) |
+| `smart_range_empty_ts` | ISO 8601 | Zeitpunkt „Akku leer“ laut Energiebilanz, `null` wenn er bis Ende morgen durchhält |
+| `smart_range_min_kwh`, `smart_range_min_ts` | kWh, ISO 8601 | tiefster nutzbarer Akkustand im Rechenzeitraum und wann |
+| `smart_range_until_ts` | ISO 8601 | Ende des Rechenzeitraums (Ende morgen, lokal) |
+| `smart_range_basis` | – | Grundlage des Verbrauchs: `lastprofil`, `durchschnitt` (Ø 30 Tage / 24) oder `aktuelle_last` |
 
 ## Berechnungen
 
 Die Formeln sind 1:1 aus der Node-RED-Function „Berechnen + JSON Response“ und den Quoten-Functions übernommen (`lib/metrics.js`, reine Funktionen mit Unit-Tests):
 
-- **Reichweite:** `> 72 h` → ok, `≥ 8 h` ok, `≥ 3 h` warn, `≥ 1 h` crit, darunter Minuten, crit. Die smarte Reichweite ist `∞`, sobald Akku + Prognose den Ø-Tagesverbrauch decken.
+- **Reichweite:** `> 72 h` → ok, `≥ 8 h` ok, `≥ 3 h` warn, `≥ 1 h` crit, darunter Minuten, crit. Die einfache Reichweite (`range_*`) ist wie im Original nutzbare Akku-Energie ÷ aktuelles Defizit.
+- **Smarte Reichweite** (`lib/range.js`): Energiebilanz in 15-min-Schritten von jetzt bis Ende morgen: *Akku + PV-Prognose − erwarteter Verbrauch*, nach oben begrenzt auf die nutzbare Kapazität ((100 − Mindest-SOC) % × Kapazität; Überschuss bei vollem Akku verfällt), nach unten auf den Mindest-SOC. Erwarteter Verbrauch: Lastprofil je Uhrzeit (Ø der Stundenmittel von `measurements.load` der letzten 14 Tage), ohne Profil Ø 30 Tage / 24, sonst aktuelle Last. Wird der Akku leer, ist die Reichweite die Zeit bis dahin – und der Status dann mindestens „Niedrig“, auch wenn es mehr als 8 h sind.
 - **Autarkie** = (Verbrauch − Netzbezug) / Verbrauch, **Eigenverbrauch** = Verbrauch / PV – jeweils auf 0–100 % begrenzt, 0,1 % gerundet. Fehlen Verbrauch oder PV (oder sind 0), ist die Quote `null`.
 - **Woche:** Summe der letzten 7 Tageswerte (Verbrauch/PV > 1 kWh, Netz ≥ 0) aus den letzten 8 Tagen. **Quartal/Jahr:** alle Tageswerte ab Quartals- bzw. Jahresbeginn.
 - **Nacht/Tag/Abend:** aus dem Verbrauchszähler um 06:00 und 17:00 (jeweils erster Wert im Fenster ± 15 min). Wie im Original gibt es den Tageswert erst ab 17 Uhr; die Oberfläche zeigt vorher den bisherigen Verbrauch seit 6 Uhr.
@@ -203,7 +208,8 @@ Das bisherige Original (Node-RED-Tab, Widget, ioBroker-Skript) liegt unveränder
 | 25 Einzelabfragen je Aufruf | 1 Mehrfach-Query je Zyklus + 1 alle 30 min | Last auf InfluxDB |
 | Berechnung je HTTP-Aufruf | Berechnung je Zyklus, Antwort aus dem Speicher | beliebig viele Clients ohne Zusatzlast |
 | Anker 22:00 abgefragt, aber nicht verwendet; Prognose-Summe doppelt abgefragt | entfällt | – |
-| `forecast_tomorrow_kwh` = `sum(value)/1000` der nächsten 24 h | Kalendertag morgen 0–24 Uhr, über die Zeit integriert | richtig bei jedem Raster; „morgen“ heißt morgen. Die smarte Reichweite rechnet damit ebenfalls mit dem morgigen Tag |
+| `forecast_tomorrow_kwh` = `sum(value)/1000` der nächsten 24 h | Kalendertag morgen 0–24 Uhr, über die Zeit integriert | richtig bei jedem Raster; „morgen“ heißt morgen |
+| Smarte Reichweite: Akku + Prognose ≥ Ø-Tagesverbrauch → „∞ Morgen genug“, sonst (Akku + Prognose) ÷ Ø-Stundenverbrauch | Energiebilanz über die Zeit mit Lastprofil und Akku-Kapazität, Zeitpunkt „Akku leer“ | das Original zählte die Sonne von morgen, als läge sie schon im Akku: um 21 Uhr mit 2 kWh Akku und 20 kWh Prognose zeigte es „∞“, obwohl der Akku um Mitternacht leer ist; die Sonne von heute fehlte ganz |
 | Widget-Beschriftung „Nacht 22–06“, „Abend 17–22“ | „Nacht 0–6 Uhr“, „Abend ab 17 Uhr“ | entspricht der tatsächlichen Berechnung (Zähler startet um 0 Uhr, Abend läuft bis jetzt) |
 | Google Fonts | System-Schriften | keine externen Requests |
 

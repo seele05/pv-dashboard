@@ -46,7 +46,7 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh']]);
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis']]);
 });
 
 
@@ -111,27 +111,46 @@ test('Restreichweite: nur bei Defizit, sonst unendlich', () => {
 });
 
 
-test('Smarte Reichweite: Akku + Prognose gegen Ø 30 Tage', () => {
-    const avg10 = dayRows(Array(30).fill(10));            // Ø 10 kWh/Tag -> 0,4167 kWh/h
-    // 5 kWh Akku + 12,5 kWh Prognose >= 10 -> unendlich, auch bei Defizit
-    let out = m.computePayload(raw({ pv_w: 0, load_w: 2000, avg_rows: avg10 }), null, OPTS);
+test('Smarte Reichweite: Energiebilanz bis Ende morgen statt "Akku + Prognose morgen >= Ø"', () => {
+    const avg16 = dayRows(Array(30).fill(16.8));                  // Ø 16,8 kWh/Tag = 700 W
+    const sunAt = (day, kwh) => {                                  // PV 08-18 Uhr lokal, stuendlich
+        const peak = kwh * 1000 * Math.PI / 20;
+        return Array.from({ length: 11 }, (_, i) => ({ time: t.zonedToUtc(2026, 10, day, 8 + i, 0, 0, TZ), v: peak * Math.sin(Math.PI * i / 10) }));
+    };
+
+    // Fall A: 21:00, SOC 30 % (2 kWh nutzbar), morgen 20 kWh. Original: "∞ Morgen genug".
+    const nowA = t.zonedToUtc(2026, 10, 13, 21, 0, 0, TZ);
+    let out = m.computePayload(raw({ soc: 30, pv_w: 0, load_w: 700, avg_rows: avg16, forecast_tomorrow_kwh: 20 }), null,
+        { ...OPTS, now: nowA, tz: TZ, forecast: sunAt(14, 20) });
+    assert.equal(out.smart_range_status, 'crit');   // 2,86 h < 3 h
+    assert.equal(out.smart_range_label, '2.9 h');
+    assert.equal(out.smart_range_empty_ts, new Date(nowA + 2 / 0.7 * 3_600_000).toISOString());
+    assert.equal(out.smart_range_basis, 'durchschnitt');
+
+    // Akku haelt bis zur Sonne und darueber hinaus -> unendlich, mit tiefstem Stand
+    out = m.computePayload(raw({ soc: 100, pv_w: 0, load_w: 300, avg_rows: [] }), null,
+        { ...OPTS, now: nowA, tz: TZ, forecast: sunAt(14, 25), loadProfile: Array(24).fill(300) });
     assert.equal(out.smart_range_status, 'infinite');
-    assert.equal(out.range_status, 'crit');
+    assert.equal(out.smart_range_label, '∞');
+    assert.equal(out.smart_range_empty_ts, null);
+    assert.equal(out.smart_range_basis, 'lastprofil');
+    assert.ok(out.smart_range_min_kwh > 0 && out.smart_range_min_kwh < 9);
 
-    // 5 kWh + 0 Prognose = 12 h -> ok
-    out = m.computePayload(raw({ forecast_tomorrow_kwh: null, avg_rows: avg10 }), null, OPTS);
-    assert.equal(out.smart_range_label, '12.0 h');
-    assert.equal(out.smart_range_status, 'ok');
+    // leer erst nach ~13 h (vor Sonnenaufgang): Schwelle >= 8 h waere "ok", leer vor Ende morgen -> "warn"
+    out = m.computePayload(raw({ soc: 100, pv_w: 0, load_w: 700, avg_rows: [] }), null,
+        { ...OPTS, now: nowA, tz: TZ, loadProfile: Array(24).fill(700) });
+    assert.equal(out.smart_range_label, '12.9 h');
+    assert.equal(out.smart_range_status, 'warn');
 
-    // SOC am Minimum, keine Prognose -> 0 h -> '0 min' crit
-    out = m.computePayload(raw({ soc: 10, forecast_tomorrow_kwh: 0, avg_rows: avg10 }), null, OPTS);
+    // SOC am Minimum -> sofort leer
+    out = m.computePayload(raw({ soc: 10, avg_rows: avg16 }), null, { ...OPTS, tz: TZ });
     assert.equal(out.smart_range_label, '0 min');
     assert.equal(out.smart_range_status, 'crit');
 
-    // ohne 30-Tage-Ø uebernimmt die smarte Reichweite die normale
-    out = m.computePayload(raw({ pv_w: 0, load_w: 2000, avg_rows: [] }), null, OPTS);
+    // ohne Ø und ohne aktuelle Last nichts zu rechnen -> normale Reichweite
+    out = m.computePayload(raw({ pv_w: 0, load_w: null, avg_rows: [] }), null, { ...OPTS, tz: TZ });
     assert.equal(out.smart_range_label, out.range_label);
-    assert.equal(out.smart_range_status, out.range_status);
+    assert.equal(out.smart_range_basis, null);
 });
 
 

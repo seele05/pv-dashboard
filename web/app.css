@@ -112,7 +112,7 @@ body {
 
 /* Reichweite */
 .range { display: flex; align-items: center; gap: 16px; }
-.range-big { font-size: 2.6rem; font-weight: 300; line-height: 1; letter-spacing: -0.02em; min-width: 3ch; }
+.range-big { font-size: 2.6rem; font-weight: 300; line-height: 1; letter-spacing: -0.02em; min-width: 3ch; white-space: nowrap; }
 .range-info { display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem; min-width: 0; }
 .badge { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; font-size: 0.7rem; font-weight: 700; letter-spacing: .04em; border-radius: 999px; padding: 2px 9px; margin-bottom: 3px; }
 .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
