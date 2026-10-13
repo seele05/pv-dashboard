@@ -133,3 +133,23 @@ test('Weboberflaeche laedt nichts von fremden Hosts', () => {
         assert.ok(!/@import|fonts\.googleapis|cdn\./i.test(t), `${f} laedt externe Ressourcen`);
     }
 });
+
+test('GIT_REVISION erscheint in Meta und Status, ohne Variable fehlt revision', async () => {
+    const alt = process.env.GIT_REVISION;
+    try {
+        delete process.env.GIT_REVISION;
+        await withMockApp(async base => {
+            const meta = await (await fetch(base + '/api/meta')).json();
+            assert.ok(!('revision' in meta));
+        });
+        process.env.GIT_REVISION = '7b7db58';
+        await withMockApp(async base => {
+            const meta = await (await fetch(base + '/api/meta')).json();
+            const status = await (await fetch(base + '/api/status')).json();
+            assert.equal(meta.revision, '7b7db58');
+            assert.equal(status.revision, '7b7db58');
+        });
+    } finally {
+        if (alt === undefined) delete process.env.GIT_REVISION; else process.env.GIT_REVISION = alt;
+    }
+});

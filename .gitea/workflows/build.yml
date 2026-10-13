@@ -21,6 +21,6 @@ jobs:
           IMAGE="$REGISTRY/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
           TAG="$(echo "$GITHUB_SHA" | cut -c1-7)"
           echo "$REGISTRY_TOKEN" | docker login "$REGISTRY" -u "$GITHUB_REPOSITORY_OWNER" --password-stdin
-          docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+          docker build --build-arg GIT_REVISION="$TAG" -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
           docker push "$IMAGE:$TAG"
           docker push "$IMAGE:latest"

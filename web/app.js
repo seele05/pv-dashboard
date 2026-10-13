@@ -402,7 +402,7 @@
     }
     document.title = meta.title;
     setText('title', meta.title);
-    setText('foot', 'pv-dashboard' + (meta.version ? ' ' + meta.version : '') + (meta.mock ? ' · Mock-Modus' : '') + ' · Aktualisierung alle ' + meta.pollSeconds + ' s');
+    setText('foot', 'pv-dashboard' + (meta.version ? ' ' + meta.version + (meta.revision ? ' · ' + meta.revision : '') : '') + (meta.mock ? ' · Mock-Modus' : '') + ' · Aktualisierung alle ' + meta.pollSeconds + ' s');
     await load();
     schedule();
   }

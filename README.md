@@ -173,7 +173,7 @@ cp config.example.js config.js     # anpassen
 docker compose up -d --build
 ```
 
-`config.js` wird schreibgeschützt eingebunden, der Zustand liegt im Volume `/app/data`. Zum Ausprobieren ohne InfluxDB in `docker-compose.yml` die Zeile `command: ["node", "main.js", "--mock"]` aktivieren. Statt `config.js` einzubinden, kann die Konfiguration auch als `CONFIG_JSON` im `environment` stehen.
+`config.js` wird schreibgeschützt eingebunden, der Zustand liegt im Volume `/app/data`. Zum Ausprobieren ohne InfluxDB in `docker-compose.yml` die Zeile `command: ["node", "main.js", "--mock"]` aktivieren. Die CI übergibt den Kurz-Hash des Commits als Build-Argument `GIT_REVISION`; die Fußzeile zeigt dann „Version · Hash“. Lokal oder ohne Wert erscheint nur die Version (`docker build --build-arg GIT_REVISION=<hash> .`). Statt `config.js` einzubinden, kann die Konfiguration auch als `CONFIG_JSON` im `environment` stehen.
 
 **systemd:** Unit in [`contrib/pv-dashboard.service`](contrib/pv-dashboard.service) (Installation unter `/opt/pv-dashboard`, eigener Benutzer `pv`, Schreibrechte nur im Programmverzeichnis).
 
