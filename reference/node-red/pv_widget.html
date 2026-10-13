@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PV Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+  :root {
+    --bg:      #0a0c0f;
+    --bg2:     #111418;
+    --bg3:     #1a1e24;
+    --border:  rgba(255,255,255,0.07);
+    --text:    #c8cdd6;
+    --dim:     #4a5060;
+    --green:   #3ddc84;
+    --yellow:  #f5c518;
+    --orange:  #ff7c2a;
+    --red:     #ff4f4f;
+    --blue:    #4da6ff;
+    --purple:  #a07cff;
+    --mono:    'IBM Plex Mono', monospace;
+    --sans:    'IBM Plex Sans', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; padding:16px; }
+  .wrap { max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:10px; }
+
+  .header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--bg2); border:1px solid var(--border); border-radius:4px; }
+  .header-title { font-size:11px; letter-spacing:0.12em; color:var(--dim); text-transform:uppercase; font-family:var(--mono); }
+  .header-ts { font-size:11px; font-family:var(--mono); color:var(--dim); }
+  .dot-live { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--green); margin-right:6px; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .flow-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; }
+  .flow-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .flow-row:last-child { margin-bottom:0; }
+  .flow-icon { width:28px; height:28px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .flow-info { flex:1; min-width:0; }
+  .flow-name { font-size:11px; color:var(--dim); font-family:var(--mono); letter-spacing:0.06em; margin-bottom:3px; }
+  .flow-bar-track { height:4px; background:var(--bg3); border-radius:2px; overflow:hidden; }
+  .flow-bar-fill { height:100%; border-radius:2px; transition:width .6s ease; }
+  .flow-val { font-size:13px; font-family:var(--mono); min-width:62px; text-align:right; flex-shrink:0; }
+
+  .bat-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; }
+  .bat-track { height:12px; background:var(--bg3); border-radius:2px; overflow:hidden; margin:8px 0 6px; }
+  .bat-fill { height:100%; border-radius:2px; transition:width .8s ease; }
+  .bat-meta { display:flex; justify-content:space-between; font-size:11px; font-family:var(--mono); color:var(--dim); }
+
+  .day-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; }
+  .sec-title { font-size:10px; letter-spacing:0.1em; color:var(--dim); text-transform:uppercase; font-family:var(--mono); margin-bottom:10px; }
+  .day-row { display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; border-bottom:1px solid var(--border); }
+  .day-row:last-child { border-bottom:none; }
+  .day-key { font-size:12px; color:var(--dim); font-family:var(--mono); }
+  .day-v { font-size:14px; font-family:var(--mono); }
+
+  .range-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; display:flex; align-items:center; gap:16px; }
+  .range-big { font-size:36px; font-family:var(--mono); font-weight:300; line-height:1; }
+  .range-info { flex:1; }
+  .range-detail { font-size:11px; color:var(--dim); font-family:var(--mono); }
+
+  .badge { display:inline-block; font-size:10px; font-family:var(--mono); padding:2px 8px; border-radius:2px; letter-spacing:0.08em; }
+  .badge-ok    { background:rgba(61,220,132,.12); color:var(--green); }
+  .badge-warn  { background:rgba(245,197,24,.12); color:var(--yellow); }
+  .badge-crit  { background:rgba(255,79,79,.12);  color:var(--red); }
+  .badge-inf   { background:rgba(77,166,255,.12); color:var(--blue); }
+
+  /* Quoten Grid */
+  .quoten-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .quoten-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:12px 14px; }
+  .quoten-period { font-size:10px; letter-spacing:0.1em; color:var(--dim); text-transform:uppercase; font-family:var(--mono); margin-bottom:8px; }
+  .quoten-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .quoten-row:last-child { margin-bottom:0; }
+  .quoten-label { font-size:11px; color:var(--dim); font-family:var(--mono); }
+  .quoten-val { font-size:13px; font-family:var(--mono); }
+  .quoten-bar-track { height:3px; background:var(--bg3); border-radius:2px; overflow:hidden; margin-top:3px; }
+  .quoten-bar-fill { height:100%; border-radius:2px; transition:width .6s ease; }
+
+  .c-green  { color:var(--green); }
+  .c-yellow { color:var(--yellow); }
+  .c-orange { color:var(--orange); }
+  .c-red    { color:var(--red); }
+  .c-blue   { color:var(--blue); }
+  .c-purple { color:var(--purple); }
+  .c-dim    { color:var(--dim); }
+  .source-card { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; display:flex; align-items:center; gap:14px; }
+  .source-icon { width:40px; height:40px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .source-label { font-size:16px; font-weight:500; font-family:var(--mono); line-height:1.2; }
+  .source-sub { font-size:11px; color:var(--dim); font-family:var(--mono); margin-top:3px; }
+  .source-right { margin-left:auto; text-align:right; }
+  .source-soc { font-size:20px; font-family:var(--mono); font-weight:300; }
+  .source-soc-label { font-size:10px; color:var(--dim); font-family:var(--mono); letter-spacing:0.08em; text-transform:uppercase; margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <span class="header-title"><span class="dot-live"></span>PV System</span>
+    <span class="header-ts" id="ts">–</span>
+  </div>
+
+
+  <!-- Energiequelle -->
+  <div class="source-card" id="source-card">
+    <div class="source-icon" id="source-icon">–</div>
+    <div>
+      <div class="source-label" id="source-label">–</div>
+      <div class="source-sub" id="source-sub">–</div>
+    </div>
+    <div class="source-right">
+      <div class="source-soc" id="source-soc">–</div>
+      <div class="source-soc-label">Batterie</div>
+    </div>
+  </div>
+
+  <!-- Restreichweite -->
+  <div class="range-card">
+    <div>
+      <div style="font-size:10px;letter-spacing:.1em;color:var(--dim);font-family:var(--mono);text-transform:uppercase;margin-bottom:6px;">Restreichweite</div>
+      <div class="range-big" id="range-val">–</div>
+    </div>
+    <div class="range-info">
+      <div id="range-badge" style="margin-bottom:6px;"></div>
+      <div class="range-detail" id="range-detail">–</div>
+      <div class="range-detail" style="margin-top:4px;" id="range-avail">–</div>
+    </div>
+  </div>
+
+  <!-- Leistung aktuell -->
+  <div class="flow-card">
+    <div class="sec-title">Leistung aktuell</div>
+    <div class="flow-row">
+      <div class="flow-icon" style="background:rgba(245,197,24,.1);">☀</div>
+      <div class="flow-info">
+        <div class="flow-name">Solar</div>
+        <div class="flow-bar-track"><div class="flow-bar-fill" id="bar-pv" style="background:var(--yellow);width:0%"></div></div>
+      </div>
+      <div class="flow-val c-yellow" id="val-pv">– W</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-icon" style="background:rgba(61,220,132,.1);">⌂</div>
+      <div class="flow-info">
+        <div class="flow-name">Verbrauch</div>
+        <div class="flow-bar-track"><div class="flow-bar-fill" id="bar-load" style="background:var(--green);width:0%"></div></div>
+      </div>
+      <div class="flow-val c-green" id="val-load">– W</div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-icon" style="background:rgba(160,124,255,.1);">⚡</div>
+      <div class="flow-info">
+        <div class="flow-name">Akku</div>
+        <div class="flow-bar-track"><div class="flow-bar-fill" id="bar-bat" style="background:var(--purple);width:0%"></div></div>
+      </div>
+      <div class="flow-val c-purple" id="val-bat">– W</div>
+    </div>
+    <div class="flow-row" style="margin-top:4px;padding-top:10px;border-top:1px solid var(--border);">
+      <div class="flow-icon" style="background:rgba(77,166,255,.1);">≈</div>
+      <div class="flow-info">
+        <div class="flow-name">Vorhersage</div>
+        <div class="flow-bar-track"><div class="flow-bar-fill" id="bar-fc" style="background:var(--blue);width:0%"></div></div>
+      </div>
+      <div class="flow-val c-blue" id="val-fc">– W</div>
+    </div>
+  </div>
+
+  <!-- Akku SOC -->
+  <div class="bat-card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <span style="font-size:10px;letter-spacing:.1em;color:var(--dim);font-family:var(--mono);text-transform:uppercase;">Batterie</span>
+      <span style="font-size:22px;font-family:var(--mono);" id="soc-val">–%</span>
+    </div>
+    <div class="bat-track"><div class="bat-fill" id="soc-bar" style="background:var(--green);width:0%"></div></div>
+    <div class="bat-meta">
+      <span id="bat-avail">– kWh verfügbar</span>
+      <span id="bat-dir">–</span>
+    </div>
+  </div>
+
+  <!-- Tageswerte -->
+  <div class="day-card">
+    <div class="sec-title">Heute</div>
+    <div class="day-row">
+      <span class="day-key">PV erzeugt</span>
+      <span class="day-v c-yellow" id="d-pv">– kWh</span>
+    </div>
+    <div class="day-row">
+      <span class="day-key">Verbrauch</span>
+      <span class="day-v" id="d-load">– kWh</span>
+    </div>
+    <div class="day-row">
+      <span class="day-key">Landstrom</span>
+      <span class="day-v c-red" id="d-grid">– kWh</span>
+    </div>
+    <div class="day-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;">
+      <span class="day-key" style="color:var(--purple);">Nacht 22–06</span>
+      <span class="day-v c-purple" id="d-nacht">–</span>
+    </div>
+    <div class="day-row">
+      <span class="day-key" style="color:var(--yellow);">Tag 06–17</span>
+      <span class="day-v c-yellow" id="d-tag">–</span>
+    </div>
+    <div class="day-row">
+      <span class="day-key" style="color:var(--orange);">Abend 17–22</span>
+      <span class="day-v c-orange" id="d-abend">–</span>
+    </div>
+    <div class="day-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;">
+      <span class="day-key">Gestern</span>
+      <span class="day-v" id="d-yesterday">–</span>
+    </div>
+    <div class="day-row">
+      <span class="day-key">Gestern vs. Ø</span>
+      <span class="day-v" id="d-delta-yesterday">–</span>
+    </div>
+    <div class="day-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px;">
+      <span class="day-key">Ø 30 Tage</span>
+      <span class="day-v c-dim" id="d-avg">–</span>
+    </div>
+  </div>
+
+  <!-- Autarkie -->
+  <div class="day-card">
+    <div class="sec-title">Autarkie</div>
+    <div class="quoten-grid">
+      <div class="quoten-card">
+        <div class="quoten-period">Heute</div>
+        <div class="quoten-row"><span class="quoten-val" id="q-heute-aut">–</span></div>
+        <div class="quoten-bar-track"><div class="quoten-bar-fill" id="qb-heute-aut" style="width:0%"></div></div>
+      </div>
+      <div class="quoten-card">
+        <div class="quoten-period">7 Tage</div>
+        <div class="quoten-row"><span class="quoten-val" id="q-woche-aut">–</span></div>
+        <div class="quoten-bar-track"><div class="quoten-bar-fill" id="qb-woche-aut" style="width:0%"></div></div>
+      </div>
+      <div class="quoten-card">
+        <div class="quoten-period">Jahreszeit</div>
+        <div class="quoten-row"><span class="quoten-val" id="q-season-aut">–</span></div>
+        <div class="quoten-bar-track"><div class="quoten-bar-fill" id="qb-season-aut" style="width:0%"></div></div>
+      </div>
+      <div class="quoten-card">
+        <div class="quoten-period">Jahr</div>
+        <div class="quoten-row"><span class="quoten-val" id="q-jahr-aut">–</span></div>
+        <div class="quoten-bar-track"><div class="quoten-bar-fill" id="qb-jahr-aut" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '/pv-data';
+const MAX_PV   = 19800;
+const MAX_LOAD = 17500;
+const MAX_BAT  = 10000;
+
+function fmt(w) {
+  if (w === null || w === undefined) return '–';
+  if (Math.abs(w) >= 1000) return (w/1000).toFixed(2) + ' kW';
+  return Math.round(w) + ' W';
+}
+function fmtKwh(v) {
+  if (v === null || v === undefined) return '–';
+  return v.toFixed(1) + ' kWh';
+}
+function fmtPct(v) {
+  if (v === null || v === undefined) return '–';
+  return v.toFixed(1) + '%';
+}
+function barPct(v, max) {
+  if (v === null || v === undefined) return 0;
+  return Math.min(100, Math.max(0, Math.abs(v) / max * 100));
+}
+function quotenColor(pct) {
+  if (pct === null) return 'var(--dim)';
+  if (pct >= 80) return 'var(--green)';
+  if (pct >= 50) return 'var(--yellow)';
+  if (pct >= 25) return 'var(--orange)';
+  return 'var(--red)';
+}
+function socColor(soc) {
+  if (soc >= 60) return 'var(--green)';
+  if (soc >= 30) return 'var(--yellow)';
+  if (soc >= 15) return 'var(--orange)';
+  return 'var(--red)';
+}
+function setQuote(idAut, idBarAut, aut) {
+  const el = document.getElementById(idAut);
+  el.textContent = fmtPct(aut);
+  el.style.color = quotenColor(aut);
+  document.getElementById(idBarAut).style.width = (aut || 0) + '%';
+  document.getElementById(idBarAut).style.background = quotenColor(aut);
+}
+
+
+  // Energiequelle bestimmen
+  function sourceInfo(pv_w, bat_w, soc, load_w) {
+    const pvOn  = pv_w > 100;
+    const batDischarging = bat_w < -50;
+    const batCharging    = bat_w > 50;
+    const netCover = load_w > 0 && pv_w >= load_w * 0.8;
+
+    if (pvOn && !batDischarging) {
+      return { icon:'☀', label:'Solar', sub: pv_w >= 1000 ? (pv_w/1000).toFixed(1)+' kW PV' : Math.round(pv_w)+' W PV', bg:'rgba(245,197,24,.12)', color:'var(--yellow)' };
+    }
+    if (pvOn && batDischarging) {
+      return { icon:'⚡', label:'Solar + Akku', sub: Math.round(pv_w)+' W PV · Akku stützt', bg:'rgba(77,166,255,.12)', color:'var(--blue)' };
+    }
+    if (!pvOn && batDischarging) {
+      return { icon:'🔋', label:'Batterie', sub: soc + '% verbleibend', bg:'rgba(160,124,255,.12)', color:'var(--purple)' };
+    }
+    if (!pvOn && !batDischarging && batCharging) {
+      return { icon:'🔌', label:'Netz', sub:'Akku wird geladen', bg:'rgba(255,79,79,.12)', color:'var(--red)' };
+    }
+    return { icon:'🔌', label:'Netz', sub:'Netzbetrieb', bg:'rgba(255,79,79,.12)', color:'var(--red)' };
+  }
+
+function render(d) {
+
+  // Energiequelle
+  const src = sourceInfo(d.pv_w, d.bat_w, d.soc, d.load_w);
+  document.getElementById('source-icon').textContent = src.icon;
+  document.getElementById('source-icon').style.background = src.bg;
+  document.getElementById('source-label').textContent = src.label;
+  document.getElementById('source-label').style.color = src.color;
+  document.getElementById('source-sub').textContent = src.sub;
+  document.getElementById('source-soc').textContent = d.soc !== null ? Math.round(d.soc) + '%' : '–';
+  document.getElementById('source-soc').style.color = socColor(d.soc);
+
+
+  const t = new Date(d.ts);
+  document.getElementById('ts').textContent = t.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  // Restreichweite (smart = Akku + Forecast morgen vs. 30d-Durchschnitt)
+  const rl = d.smart_range_label || d.range_label || '–';
+  const rs = d.smart_range_status || d.range_status || 'ok';
+  const rv = document.getElementById('range-val');
+  rv.textContent = rl;
+  const statusColor = { infinite:'var(--blue)', ok:'var(--green)', warn:'var(--yellow)', crit:'var(--red)' };
+  rv.style.color = statusColor[rs] || 'var(--text)';
+  const badgeClass = { infinite:'badge-inf', ok:'badge-ok', warn:'badge-warn', crit:'badge-crit' };
+  const badgeText  = { infinite:'MORGEN GENUG', ok:'OK', warn:'NIEDRIG', crit:'KRITISCH' };
+  document.getElementById('range-badge').innerHTML = '<span class="badge ' + (badgeClass[rs]||'') + '">' + (badgeText[rs]||'') + '</span>';
+  document.getElementById('range-detail').textContent = d.net_kw !== null ? 'Bilanz: ' + (d.net_kw >= 0 ? '+' : '') + d.net_kw.toFixed(2) + ' kW' : '–';
+  const fc_str = d.forecast_tomorrow_kwh !== null ? ' · Morgen ~' + d.forecast_tomorrow_kwh.toFixed(0) + ' kWh' : '';
+  document.getElementById('range-avail').textContent = (d.avail_kwh !== null ? d.avail_kwh.toFixed(1) + ' kWh Akku' : '–') + fc_str;
+
+  // Leistung
+  document.getElementById('val-pv').textContent   = fmt(d.pv_w);
+  document.getElementById('val-load').textContent = fmt(d.load_w);
+  document.getElementById('val-bat').textContent  = d.bat_w !== null ? (d.bat_w > 0 ? '+' : '') + fmt(d.bat_w) : '–';
+  document.getElementById('val-fc').textContent   = fmt(d.forecast_w);
+  document.getElementById('bar-pv').style.width   = barPct(d.pv_w,   MAX_PV)   + '%';
+  document.getElementById('bar-load').style.width = barPct(d.load_w, MAX_LOAD) + '%';
+  document.getElementById('bar-bat').style.width  = barPct(d.bat_w,  MAX_BAT)  + '%';
+  document.getElementById('bar-fc').style.width   = barPct(d.forecast_w, MAX_PV) + '%';
+  if (d.bat_direction === 'charging')         document.getElementById('bar-bat').style.background = 'var(--green)';
+  else if (d.bat_direction === 'discharging') document.getElementById('bar-bat').style.background = 'var(--orange)';
+  else                                        document.getElementById('bar-bat').style.background = 'var(--purple)';
+
+  // SOC
+  if (d.soc !== null) {
+    document.getElementById('soc-val').textContent = Math.round(d.soc) + '%';
+    document.getElementById('soc-bar').style.width = Math.round(d.soc) + '%';
+    document.getElementById('soc-bar').style.background = socColor(d.soc);
+    document.getElementById('bat-avail').textContent = d.avail_kwh !== null ? d.avail_kwh.toFixed(1) + ' kWh verfügbar' : '–';
+    const dirs = { charging:'↑ lädt', discharging:'↓ entlädt', idle:'⏸ idle' };
+    document.getElementById('bat-dir').textContent = dirs[d.bat_direction] || '–';
+  }
+
+  // Tageswerte
+  document.getElementById('d-pv').textContent    = fmtKwh(d.daily_pv_kwh);
+  document.getElementById('d-load').textContent  = fmtKwh(d.daily_load_kwh);
+  document.getElementById('d-grid').textContent  = fmtKwh(d.daily_grid_kwh);
+  document.getElementById('d-avg').textContent   = fmtKwh(d.avg_30d_kwh);
+  document.getElementById('d-nacht').textContent = d.kwh_nacht !== null ? d.kwh_nacht.toFixed(1) + ' kWh' : '–';
+  document.getElementById('d-tag').textContent   = d.kwh_tag   !== null ? d.kwh_tag.toFixed(1)   + ' kWh' : '–';
+  document.getElementById('d-abend').textContent = d.kwh_abend !== null ? d.kwh_abend.toFixed(1) + ' kWh' : '–';
+  document.getElementById('d-yesterday').textContent = d.yesterday_kwh !== null ? d.yesterday_kwh.toFixed(1) + ' kWh' : '–';
+  if (d.delta_yesterday_pct !== null) {
+    const sign = d.delta_yesterday_pct >= 0 ? '+' : '';
+    const el = document.getElementById('d-delta-yesterday');
+    el.textContent = sign + d.delta_yesterday_pct.toFixed(1) + '% vs. Ø';
+    el.className = 'day-v ' + (d.delta_yesterday_pct > 10 ? 'c-red' : d.delta_yesterday_pct < -10 ? 'c-green' : 'c-dim');
+  }
+
+  // Quoten
+  setQuote('q-heute-aut',  'qb-heute-aut',  d.autarkie_heute);
+  setQuote('q-woche-aut',  'qb-woche-aut',  d.autarkie_woche);
+  setQuote('q-season-aut', 'qb-season-aut', d.autarkie_season);
+  setQuote('q-jahr-aut',   'qb-jahr-aut',   d.autarkie_jahr);
+}
+
+async function load() {
+  try {
+    const r = await fetch(API);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    render(d);
+  } catch(e) {
+    document.getElementById('ts').textContent = 'Fehler: ' + e.message;
+  }
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
