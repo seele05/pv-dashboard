@@ -1,0 +1,1319 @@
+[
+ {
+  "id": "7b2154542b5b1d20",
+  "type": "group",
+  "z": "393ff6be375b899a",
+  "name": "",
+  "style": {
+   "fill": "#dbcbe7",
+   "label": true
+  },
+  "nodes": [
+   "pv_http_widget_in",
+   "pv_widget_file",
+   "pv_widget_response",
+   "pv_comment"
+  ],
+  "x": 2854,
+  "y": 159,
+  "w": 252,
+  "h": 262
+ },
+ {
+  "id": "2700c591ae70ded0",
+  "type": "group",
+  "z": "393ff6be375b899a",
+  "name": "",
+  "style": {
+   "fill": "#e3f3d3",
+   "label": true
+  },
+  "nodes": [
+   "pv_quoten_comment",
+   "pv_quoten_inject",
+   "pv_qt_week_load",
+   "pv_qt_s_week_load",
+   "pv_qt_week_pv",
+   "pv_qt_s_week_pv",
+   "pv_qt_week_grid",
+   "pv_qt_s_week_grid",
+   "pv_qt_season_load",
+   "pv_qt_s_season_load",
+   "pv_qt_season_pv",
+   "pv_qt_s_season_pv",
+   "pv_qt_season_grid",
+   "pv_qt_s_season_grid",
+   "pv_qt_year_load",
+   "pv_qt_s_year_load",
+   "pv_qt_year_pv",
+   "pv_qt_s_year_pv",
+   "pv_qt_year_grid",
+   "pv_qt_s_year_grid",
+   "pv_quoten_timer_comment",
+   "1fc535d85a80452e"
+  ],
+  "x": 2074,
+  "y": 199,
+  "w": 922,
+  "h": 722
+ },
+ {
+  "id": "343cf4dfe110ab1d",
+  "type": "group",
+  "z": "393ff6be375b899a",
+  "name": "",
+  "style": {
+   "fill": "#bfdbef",
+   "label": true
+  },
+  "nodes": [
+   "e82b7a1f58041cdf",
+   "147d9aef7d9854cd",
+   "693db1a0556a4133",
+   "b58a2aac789db370",
+   "2664cbe0f4f2e5e4",
+   "618bc8e64781b736",
+   "37d5b6f7d7cad0e2",
+   "99ed3efb5432b103",
+   "aae50a69f0108ce2",
+   "7f51b86a20ae6d28",
+   "cc180265f62e7df6",
+   "9c9011c3ed84821b",
+   "3b6c8e24a1182d7a",
+   "d8f0868a3cc9ff7c",
+   "5768207cf53f51a6",
+   "e408e4891ac62de5",
+   "17be6e804e34f9a0",
+   "3d916739795b0203",
+   "1cece51d0ef46754",
+   "e0f072262eb20c72",
+   "2833a0538928a062",
+   "3b9eaef0fdd589ad",
+   "69baa9f6e673a721",
+   "bdd5419155679417",
+   "7c39a8459f2d8ac1",
+   "e74a056b50bbc2bc",
+   "c560a816037a61c9",
+   "6b90e716da153c17",
+   "45781dc3ca544283",
+   "b8595ac4e25c9773",
+   "bed0205765d3de1b",
+   "6d43834b0b13a977",
+   "8ac71f078e34ec65",
+   "f3d744cb9f2e133c",
+   "85bc6828e88f0133",
+   "8daef8610abeeb4b"
+  ],
+  "x": 674,
+  "y": 159,
+  "w": 1312,
+  "h": 762
+ },
+ {
+  "id": "pv_http_widget_in",
+  "type": "http in",
+  "z": "393ff6be375b899a",
+  "g": "7b2154542b5b1d20",
+  "name": "GET /pv",
+  "url": "/pv",
+  "method": "get",
+  "x": 2940,
+  "y": 260,
+  "wires": [
+   [
+    "pv_widget_file"
+   ]
+  ]
+ },
+ {
+  "id": "pv_widget_file",
+  "type": "file in",
+  "z": "393ff6be375b899a",
+  "g": "7b2154542b5b1d20",
+  "name": "pv_widget.html lesen",
+  "filename": "/data/pv_widget.html",
+  "filenameType": "str",
+  "format": "utf8",
+  "allProps": false,
+  "x": 2980,
+  "y": 320,
+  "wires": [
+   [
+    "pv_widget_response"
+   ]
+  ]
+ },
+ {
+  "id": "pv_widget_response",
+  "type": "http response",
+  "z": "393ff6be375b899a",
+  "g": "7b2154542b5b1d20",
+  "name": "HTML Response",
+  "statusCode": "200",
+  "headers": {
+   "content-type": "text/html; charset=utf-8"
+  },
+  "x": 2970,
+  "y": 380,
+  "wires": []
+ },
+ {
+  "id": "pv_comment",
+  "type": "comment",
+  "z": "393ff6be375b899a",
+  "g": "7b2154542b5b1d20",
+  "name": "Http Endpoint",
+  "info": "GET /pv-data → JSON mit allen berechneten Werten\nGET /pv      → Widget HTML\n\nAlle Queries laufen über 'wetter_server' influxdb in Node.\nInfluxdb-Node ID muss ggf. angepasst werden — Doppelklick\nauf einen influxdb in Node und Server prüfen.\n\nHTML-Datei deployen:\n  docker cp pv_widget.html nodered-node-red-1:/data/pv_widget.html",
+  "x": 2950,
+  "y": 200,
+  "wires": []
+ },
+ {
+  "id": "f3d744cb9f2e133c",
+  "type": "http in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "GET /pv-data",
+  "url": "/pv-data",
+  "method": "get",
+  "x": 770,
+  "y": 280,
+  "wires": [
+   [
+    "e82b7a1f58041cdf"
+   ]
+  ]
+ },
+ {
+  "id": "e82b7a1f58041cdf",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "SOC",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"mqtt.1.solar_assistant.total.battery_state_of_charge.state\"",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 970,
+  "y": 280,
+  "wires": [
+   [
+    "147d9aef7d9854cd"
+   ]
+  ]
+ },
+ {
+  "id": "147d9aef7d9854cd",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store SOC",
+  "func": "msg._d = msg._d || {};\ntry { msg._d.soc = msg.payload[0].v; } catch(e) { msg._d.soc = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 990,
+  "y": 340,
+  "wires": [
+   [
+    "693db1a0556a4133"
+   ]
+  ]
+ },
+ {
+  "id": "693db1a0556a4133",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "PV Power",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"mqtt.1.solar_assistant.total.pv_power.state\"",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 980,
+  "y": 400,
+  "wires": [
+   [
+    "b58a2aac789db370"
+   ]
+  ]
+ },
+ {
+  "id": "b58a2aac789db370",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store PV",
+  "func": "try { msg._d.pv_w = msg.payload[0].v; } catch(e) { msg._d.pv_w = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 980,
+  "y": 460,
+  "wires": [
+   [
+    "2664cbe0f4f2e5e4"
+   ]
+  ]
+ },
+ {
+  "id": "2664cbe0f4f2e5e4",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Load Power",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"mqtt.1.solar_assistant.total.load_power.state\"",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 990,
+  "y": 520,
+  "wires": [
+   [
+    "618bc8e64781b736"
+   ]
+  ]
+ },
+ {
+  "id": "618bc8e64781b736",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Load",
+  "func": "try { msg._d.load_w = msg.payload[0].v; } catch(e) { msg._d.load_w = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 990,
+  "y": 580,
+  "wires": [
+   [
+    "c560a816037a61c9"
+   ]
+  ]
+ },
+ {
+  "id": "37d5b6f7d7cad0e2",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Battery Power",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"mqtt.1.solar_assistant.total.battery_power.state\"",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1000,
+  "y": 880,
+  "wires": [
+   [
+    "99ed3efb5432b103"
+   ]
+  ]
+ },
+ {
+  "id": "99ed3efb5432b103",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Bat Power",
+  "func": "try { msg._d.bat_w = msg.payload[0].v; } catch(e) { msg._d.bat_w = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 1220,
+  "y": 880,
+  "wires": [
+   [
+    "aae50a69f0108ce2"
+   ]
+  ]
+ },
+ {
+  "id": "aae50a69f0108ce2",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "PV Forecast",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"pvforecast.0.summary.power\" WHERE time <= now() AND time >= now() - 1h",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1210,
+  "y": 820,
+  "wires": [
+   [
+    "7f51b86a20ae6d28",
+    "0ec3696a2dbed375"
+   ]
+  ]
+ },
+ {
+  "id": "7f51b86a20ae6d28",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Forecast",
+  "func": "try { msg._d.forecast_w = msg.payload[0].v; } catch(e) { msg._d.forecast_w = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 1220,
+  "y": 760,
+  "wires": [
+   [
+    "cc180265f62e7df6"
+   ]
+  ]
+ },
+ {
+  "id": "cc180265f62e7df6",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Daily PV",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.pv_production\" WHERE time > now() - 2d",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1200,
+  "y": 700,
+  "wires": [
+   [
+    "9c9011c3ed84821b"
+   ]
+  ]
+ },
+ {
+  "id": "9c9011c3ed84821b",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Daily PV",
+  "func": "try { msg._d.daily_pv_kwh = msg.payload[0].v; } catch(e) { msg._d.daily_pv_kwh = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 1220,
+  "y": 640,
+  "wires": [
+   [
+    "3b6c8e24a1182d7a"
+   ]
+  ]
+ },
+ {
+  "id": "3b6c8e24a1182d7a",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Daily Load",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time > now() - 2d",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1210,
+  "y": 580,
+  "wires": [
+   [
+    "d8f0868a3cc9ff7c"
+   ]
+  ]
+ },
+ {
+  "id": "d8f0868a3cc9ff7c",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Daily Load",
+  "func": "try { msg._d.daily_load_kwh = msg.payload[0].v; } catch(e) { msg._d.daily_load_kwh = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 1220,
+  "y": 520,
+  "wires": [
+   [
+    "5768207cf53f51a6"
+   ]
+  ]
+ },
+ {
+  "id": "5768207cf53f51a6",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Daily Grid",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.grid_consumption\" WHERE time > now() - 2d",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1200,
+  "y": 460,
+  "wires": [
+   [
+    "e408e4891ac62de5"
+   ]
+  ]
+ },
+ {
+  "id": "e408e4891ac62de5",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store Daily Grid",
+  "func": "try { msg._d.daily_grid_kwh = msg.payload[0].v; } catch(e) { msg._d.daily_grid_kwh = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 1220,
+  "y": 400,
+  "wires": [
+   [
+    "bed0205765d3de1b"
+   ]
+  ]
+ },
+ {
+  "id": "17be6e804e34f9a0",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "30d Avg Load",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= now() - 32d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1500,
+  "y": 400,
+  "wires": [
+   [
+    "e0f072262eb20c72"
+   ]
+  ]
+ },
+ {
+  "id": "3d916739795b0203",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "Berechnen + JSON Response",
+  "func": "// 30d Durchschnitt bereits berechnet in store 22:00 Node\n// nichts tun hier\n\nconst d = msg._d;\nconst CAPACITY = 10.0; // Beispielwert, im Original anlagenspezifisch\nconst SOC_MIN  = 10;\n\nconst wr_eigenverbrauch = (d.daily_pv_kwh !== null && d.daily_load_kwh !== null && d.daily_bat_in !== null && d.daily_bat_out !== null)\n    ? d.daily_pv_kwh - d.daily_load_kwh - d.daily_bat_in + Math.abs(d.daily_bat_out)\n    : null;\nconst avail_kwh = d.soc !== null ? ((d.soc - SOC_MIN) / 100 * CAPACITY) : null;\nconst net_kw    = (d.pv_w !== null && d.load_w !== null) ? (d.pv_w - d.load_w) / 1000 : null;\n\nlet range_h = null, range_label = '∞', range_status = 'infinite';\nif (net_kw !== null && avail_kwh !== null) {\n    if (net_kw >= 0) {\n        range_label = '∞'; range_status = 'infinite';\n    } else {\n        range_h = avail_kwh / Math.abs(net_kw);\n        if      (range_h > 72) { range_label = '> 72 h';                        range_status = 'ok';   }\n        else if (range_h >= 8) { range_label = range_h.toFixed(1) + ' h';       range_status = 'ok';   }\n        else if (range_h >= 3) { range_label = range_h.toFixed(1) + ' h';       range_status = 'warn'; }\n        else if (range_h >= 1) { range_label = range_h.toFixed(1) + ' h';       range_status = 'crit'; }\n        else                   { range_label = Math.round(range_h*60) + ' min';  range_status = 'crit'; }\n    }\n}\n// Smarte Reichweite mit Forecast\nconst forecast_kwh = d.forecast_tomorrow_kwh || 0;\nconst total_avail  = (avail_kwh || 0) + forecast_kwh;\nconst avg_h        = d.avg_30d_kwh ? d.avg_30d_kwh / 24 : null;\n\nlet smart_range_label  = range_label;\nlet smart_range_status = range_status;\n\nif (avg_h && total_avail >= (d.avg_30d_kwh || 0)) {\n    smart_range_label  = '∞';\n    smart_range_status = 'infinite';\n} else if (avg_h) {\n    const sh = total_avail / avg_h;\n    if      (sh > 72) { smart_range_label = '> 72 h';                    smart_range_status = 'ok';   }\n    else if (sh >= 8) { smart_range_label = sh.toFixed(1) + ' h';        smart_range_status = 'ok';   }\n    else if (sh >= 3) { smart_range_label = sh.toFixed(1) + ' h';        smart_range_status = 'warn'; }\n    else if (sh >= 1) { smart_range_label = sh.toFixed(1) + ' h';        smart_range_status = 'crit'; }\n    else              { smart_range_label = Math.round(sh*60) + ' min';  smart_range_status = 'crit'; }\n}\n\nlet delta_pct = null;\nif (d.avg_30d_kwh && d.daily_load_kwh) {\n    delta_pct = ((d.daily_load_kwh - d.avg_30d_kwh) / d.avg_30d_kwh) * 100;\n}\n\nlet bat_direction = 'idle';\nif (d.bat_w !== null) {\n    if      (d.bat_w > 50)  bat_direction = 'charging';\n    else if (d.bat_w < -50) bat_direction = 'discharging';\n}\n\n\n// ============================================================\n// SPLIT: Nacht (22-06) / Tag (06-17) / Abend (17-22)\n// ============================================================\nconst anchor_06 = d.anchor_06;  // kWh-Zählerstand um 06:00\nconst anchor_17 = d.anchor_17;  // kWh-Zählerstand um 17:00\nconst anchor_22 = d.anchor_22;  // kWh-Zählerstand um 22:00 GESTERN\nconst load_now  = d.daily_load_kwh; // aktueller Tagesstand\n\n// Nacht = 00:00 bis 06:00 (Zähler startet um Mitternacht bei 0)\n// anchor_06 ist direkt der kumulierte Nachtverbrauch\nlet kwh_nacht  = anchor_06 !== null ? Math.max(0, anchor_06) : null;\n// Tag   = von 06:00 bis 17:00\nlet kwh_tag    = (anchor_17 !== null && anchor_06 !== null) ? Math.max(0, anchor_17 - anchor_06) : null;\n// Abend = von 17:00 bis jetzt (oder bis 22:00 wenn vorbei)\nlet kwh_abend  = (load_now !== null && anchor_17 !== null) ? Math.max(0, load_now - anchor_17) : null;\n\n// Gestriger Tagesverbrauch = vorletzter Wert im avg_payload\nlet yesterday_kwh = null;\ntry {\n    const ap = (d.avg_payload || []).filter(r => r.v > 1);\n    yesterday_kwh = ap.length >= 2 ? ap[ap.length - 2].v : null;\n} catch(e) {}\n\nlet delta_yesterday_pct = null;\nif (yesterday_kwh !== null && d.avg_30d_kwh) {\n    delta_yesterday_pct = ((yesterday_kwh - d.avg_30d_kwh) / d.avg_30d_kwh) * 100;\n}\n// ============================================================\n// QUOTEN: Autarkie + Eigenverbrauch — Heute / Woche / Jahreszeit / Jahr\n// ============================================================\n// Quoten aus flow context (alle 30min aktualisiert)\nconst pv_quoten = flow.get('pv_quoten') || {};\nconst q_heute  = quoten(d.daily_load_kwh, d.daily_pv_kwh, d.daily_grid_kwh);\nfunction quoten(load, pv, grid) {\n    if (!load || !pv || grid === null || grid === undefined) return { autarkie: null, eigenverbrauch: null };\n    return {\n        autarkie:       Math.round(Math.max(0, Math.min(100, (load - grid) / load * 100)) * 10) / 10,\n        eigenverbrauch: Math.round(Math.max(0, Math.min(100, load / pv * 100)) * 10) / 10\n    };\n}\nmsg.payload = {\n    smart_range_label:  smart_range_label,\n    smart_range_status: smart_range_status,\n    forecast_tomorrow_kwh: d.forecast_tomorrow_kwh !== null ? Math.round(d.forecast_tomorrow_kwh * 10) / 10 : null,\n    autarkie_heute:        q_heute.autarkie,\n    eigenverbrauch_heute:  q_heute.eigenverbrauch,\n    autarkie_woche:        pv_quoten.woche  ? pv_quoten.woche.aut  : null,\n    eigenverbrauch_woche:  pv_quoten.woche  ? pv_quoten.woche.ev   : null,\n    autarkie_season:       pv_quoten.season ? pv_quoten.season.aut : null,\n    eigenverbrauch_season: pv_quoten.season ? pv_quoten.season.ev  : null,\n    autarkie_jahr:         pv_quoten.jahr   ? pv_quoten.jahr.aut   : null,\n    eigenverbrauch_jahr:   pv_quoten.jahr   ? pv_quoten.jahr.ev    : null,\n    wr_eigenverbrauch: wr_eigenverbrauch !== null ? Math.round(wr_eigenverbrauch * 10) / 10 : null,\n    ts:             new Date().toISOString(),\n    soc:            d.soc,\n    avail_kwh:      avail_kwh !== null ? Math.round(avail_kwh * 10) / 10 : null,\n    pv_w:           d.pv_w,\n    load_w:         d.load_w,\n    bat_w:          d.bat_w,\n    bat_direction:  bat_direction,\n    forecast_w:     d.forecast_w,\n    net_kw:         net_kw !== null ? Math.round(net_kw * 100) / 100 : null,\n    range_h:        range_h !== null ? Math.round(range_h * 10) / 10 : null,\n    range_label:    range_label,\n    range_status:   range_status,\n    daily_pv_kwh:   d.daily_pv_kwh,\n    daily_load_kwh: d.daily_load_kwh,\n    daily_grid_kwh: d.daily_grid_kwh,\n    avg_30d_kwh:    d.avg_30d_kwh !== null ? Math.round(d.avg_30d_kwh * 10) / 10 : null,\n    delta_pct:          delta_pct !== null ? Math.round(delta_pct * 10) / 10 : null,\n    kwh_nacht:          kwh_nacht  !== null ? Math.round(kwh_nacht  * 10) / 10 : null,\n    kwh_tag:            kwh_tag    !== null ? Math.round(kwh_tag    * 10) / 10 : null,\n    kwh_abend:          kwh_abend  !== null ? Math.round(kwh_abend  * 10) / 10 : null,\n    yesterday_kwh:      yesterday_kwh !== null ? Math.round(yesterday_kwh * 10) / 10 : null,\n    delta_yesterday_pct: delta_yesterday_pct !== null ? Math.round(delta_yesterday_pct * 10) / 10 : null\n};\n\nmsg.statusCode = 200;\nmsg.headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
+  "outputs": 1,
+  "timeout": "",
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 1550,
+  "y": 880,
+  "wires": [
+   [
+    "8ac71f078e34ec65"
+   ]
+  ]
+ },
+ {
+  "id": "8ac71f078e34ec65",
+  "type": "http response",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "JSON Response",
+  "statusCode": "200",
+  "x": 1870,
+  "y": 880,
+  "wires": []
+ },
+ {
+  "id": "1cece51d0ef46754",
+  "type": "comment",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "PV Widget Endpoint — alle influxdb in Nodes, kein HTTP",
+  "info": "GET /pv-data → JSON mit allen berechneten Werten\nGET /pv      → Widget HTML\n\nAlle Queries laufen über 'wetter_server' influxdb in Node.\nInfluxdb-Node ID muss ggf. angepasst werden — Doppelklick\nauf einen influxdb in Node und Server prüfen.\n\nHTML-Datei deployen:\n  docker cp pv_widget.html nodered-node-red-1:/data/pv_widget.html",
+  "x": 1090,
+  "y": 200,
+  "wires": []
+ },
+ {
+  "id": "e0f072262eb20c72",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "Zeitfenster berechnen (Berlin→UTC)",
+  "func": "msg._d = msg._d || {};\nconst now = new Date();\nconst pad = s => String(s).padStart(2,'0');\nconst dateStr = now.getUTCFullYear() + '-' + pad(now.getUTCMonth()+1) + '-' + pad(now.getUTCDate());\n\n// Berlin Sommerzeit = UTC+2\n// 06:00 Berlin = 04:00 UTC → Fenster ±15min\n// 17:00 Berlin = 15:00 UTC → Fenster ±15min\n// 22:00 Berlin = 20:00 UTC → Fenster ±15min\nflow.set('t06_from',  dateStr + 'T03:45:00Z');\nflow.set('t06_to',    dateStr + 'T04:15:00Z');\nflow.set('t17_from',  dateStr + 'T14:45:00Z');\nflow.set('t17_to',    dateStr + 'T15:15:00Z');\nflow.set('t22_from',  dateStr + 'T19:45:00Z');\nflow.set('t22_to',    dateStr + 'T20:15:00Z');\n\nmsg._d.avg_payload = msg.payload;\n\n// Query für Ankerpunkt 06:00\nconst f06 = flow.get('t06_from'), t06 = flow.get('t06_to');\nmsg.query = 'SELECT first(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= \\'' + f06 + '\\' AND time <= \\'' + t06 + '\\'';\nreturn msg;",
+  "outputs": 1,
+  "x": 1570,
+  "y": 460,
+  "wires": [
+   [
+    "2833a0538928a062"
+   ]
+  ]
+ },
+ {
+  "id": "2833a0538928a062",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Ankerpunkt 06:00",
+  "query": "",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1510,
+  "y": 520,
+  "wires": [
+   [
+    "3b9eaef0fdd589ad"
+   ]
+  ]
+ },
+ {
+  "id": "3b9eaef0fdd589ad",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store 06:00 + Query setzen",
+  "func": "try { msg._d.anchor_06 = msg.payload[0] ? msg.payload[0].v : null; } catch(e) { msg._d.anchor_06 = null; }\n// Setze Query für nächsten Node\nconst f = flow.get('t17_from'), t = flow.get('t17_to');\nmsg.query = 'SELECT first(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= \\'' + f + '\\' AND time <= \\'' + t + '\\'';\nreturn msg;",
+  "outputs": 1,
+  "x": 1540,
+  "y": 580,
+  "wires": [
+   [
+    "69baa9f6e673a721"
+   ]
+  ]
+ },
+ {
+  "id": "69baa9f6e673a721",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Ankerpunkt 17:00",
+  "query": "",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1510,
+  "y": 640,
+  "wires": [
+   [
+    "bdd5419155679417"
+   ]
+  ]
+ },
+ {
+  "id": "bdd5419155679417",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store 17:00 + Query setzen",
+  "func": "try { msg._d.anchor_17 = msg.payload[0] ? msg.payload[0].v : null; } catch(e) { msg._d.anchor_17 = null; }\nconst f = flow.get('t22_from'), t = flow.get('t22_to');\nmsg.query = 'SELECT first(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= \\'' + f + '\\' AND time <= \\'' + t + '\\'';\nreturn msg;",
+  "outputs": 1,
+  "x": 1540,
+  "y": 700,
+  "wires": [
+   [
+    "7c39a8459f2d8ac1"
+   ]
+  ]
+ },
+ {
+  "id": "7c39a8459f2d8ac1",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Ankerpunkt 22:00 (Vortag)",
+  "query": "",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 1530,
+  "y": 760,
+  "wires": [
+   [
+    "e74a056b50bbc2bc"
+   ]
+  ]
+ },
+ {
+  "id": "e74a056b50bbc2bc",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store 22:00 + 30d avg berechnen",
+  "func": "// anchor_22: null wenn noch nicht erreicht (vor 22:00 Uhr)\ntry { msg._d.anchor_22 = msg.payload[0] ? msg.payload[0].v : null; } catch(e) { msg._d.anchor_22 = null; }\n\n// 30d Durchschnitt aus avg_payload\ntry {\n    const raw = msg._d.avg_payload || [];\n    node.warn('avg_payload length: ' + raw.length);\n    const vals = raw\n        .filter(row => row.v !== null && row.v > 1)\n        .map(row => row.v);\n    const last30 = vals.slice(-30);\n    msg._d.avg_30d_kwh = last30.length > 0\n        ? last30.reduce((a,b) => a+b, 0) / last30.length\n        : null;\n    node.warn('avg_30d_kwh: ' + msg._d.avg_30d_kwh);\n} catch(e) {\n    node.warn('avg Fehler: ' + e.message);\n    msg._d.avg_30d_kwh = null;\n}\n\nreturn msg;",
+  "outputs": 1,
+  "x": 1560,
+  "y": 820,
+  "wires": [
+   [
+    "3d916739795b0203"
+   ]
+  ]
+ },
+ {
+  "id": "0ec3696a2dbed375",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "name": "debug 26",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "false",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 1720,
+  "y": 1380,
+  "wires": []
+ },
+ {
+  "id": "c560a816037a61c9",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "Bat In",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.bat_in\" WHERE time > now() - 2d",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "organisation",
+  "x": 970,
+  "y": 640,
+  "wires": [
+   [
+    "45781dc3ca544283"
+   ]
+  ]
+ },
+ {
+  "id": "6b90e716da153c17",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "bat_out",
+  "query": "SELECT last(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.bat_out\" WHERE time > now() - 2d",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "organisation",
+  "x": 980,
+  "y": 760,
+  "wires": [
+   [
+    "b8595ac4e25c9773"
+   ]
+  ]
+ },
+ {
+  "id": "45781dc3ca544283",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store bat_in",
+  "func": "try { msg._d.daily_bat_in = msg.payload[0].v; } catch(e) { msg._d.daily_bat_in = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": 0,
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 990,
+  "y": 700,
+  "wires": [
+   [
+    "6b90e716da153c17"
+   ]
+  ]
+ },
+ {
+  "id": "b8595ac4e25c9773",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store bat_out",
+  "func": "try { msg._d.daily_bat_out = msg.payload[0].v; } catch(e) { msg._d.daily_bat_out = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": 0,
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 990,
+  "y": 820,
+  "wires": [
+   [
+    "37d5b6f7d7cad0e2"
+   ]
+  ]
+ },
+ {
+  "id": "pv_quoten_comment",
+  "type": "comment",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "Quoten Addon — Einhängen",
+  "info": "Eingang: pv_q_week_load an den Ausgang eines beliebigen store-Nodes hängen\n(z.B. nach store Daily Grid, vor pv_q_avg).\n\nAusgang: pv_s_year_grid Ausgang → weiter zu pv_q_avg (oder nächstem Node).\n\nDie Berechnung der Quoten erfolgt im 'Berechnen + JSON Response' Node\nmit dem separaten Code-Snippet.",
+  "x": 2320,
+  "y": 240,
+  "wires": []
+ },
+ {
+  "id": "4bd91d63bc63b146",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "name": "debug 27",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "_d.year_load_kwh",
+  "targetType": "msg",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 3300,
+  "y": 1000,
+  "wires": []
+ },
+ {
+  "id": "0359338ae442ddd0",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "name": "debug 28",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "_d.year_pv_kwh",
+  "targetType": "msg",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 3360,
+  "y": 880,
+  "wires": []
+ },
+ {
+  "id": "pv_quoten_inject",
+  "type": "inject",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "Alle 30min + beim Start",
+  "props": [
+   {
+    "p": "payload"
+   }
+  ],
+  "repeat": "1800",
+  "once": true,
+  "onceDelay": 5,
+  "payload": "",
+  "x": 2230,
+  "y": 340,
+  "wires": [
+   [
+    "pv_qt_week_load"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_week_load",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "7d Load",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= now() - 8d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2180,
+  "y": 400,
+  "wires": [
+   [
+    "pv_qt_s_week_load"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_week_load",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store 7d Load",
+  "func": "msg._q = {};\ntry {\n    const vals = msg.payload.filter(r => r.v > 1).map(r => r.v);\n    msg._q.week_load = vals.slice(-7).reduce((a,b)=>a+b,0);\n} catch(e) { msg._q.week_load = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 2200,
+  "y": 460,
+  "wires": [
+   [
+    "pv_qt_week_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_week_pv",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "7d PV",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.pv_production\" WHERE time >= now() - 8d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2170,
+  "y": 520,
+  "wires": [
+   [
+    "pv_qt_s_week_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_week_pv",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store 7d PV",
+  "func": "try {\n    const vals = msg.payload.filter(r => r.v > 1).map(r => r.v);\n    msg._q.week_pv = vals.slice(-7).reduce((a,b)=>a+b,0);\n} catch(e) { msg._q.week_pv = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 2190,
+  "y": 580,
+  "wires": [
+   [
+    "pv_qt_week_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_week_grid",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "7d Grid",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.grid_consumption\" WHERE time >= now() - 8d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2180,
+  "y": 640,
+  "wires": [
+   [
+    "pv_qt_s_week_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_week_grid",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store 7d Grid",
+  "func": "try {\n    const vals = msg.payload.filter(r => r.v >= 0).map(r => r.v);\n    msg._q.week_grid = vals.slice(-7).reduce((a,b)=>a+b,0);\n} catch(e) { msg._q.week_grid = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 2190,
+  "y": 700,
+  "wires": [
+   [
+    "pv_qt_season_load"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_season_load",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahreszeit Load",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= now() - 92d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2200,
+  "y": 760,
+  "wires": [
+   [
+    "pv_qt_s_season_load",
+    "0fc4d72835f4041c"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_season_load",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahreszeit Load",
+  "func": "try {\n    const now = new Date();\n    const month = now.getUTCMonth();\n    const qStart = [0,0,0,3,3,3,6,6,6,9,9,9][month];\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), qStart, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v > 1 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.season_load = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.season_load = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": "",
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 2220,
+  "y": 820,
+  "wires": [
+   [
+    "pv_qt_season_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_season_pv",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahreszeit PV",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.pv_production\" WHERE time >= now() - 92d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2540,
+  "y": 340,
+  "wires": [
+   [
+    "pv_qt_s_season_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_season_pv",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahreszeit PV",
+  "func": "try {\n    const now = new Date();\n    const month = now.getUTCMonth();\n    const qStart = [0,0,0,3,3,3,6,6,6,9,9,9][month];\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), qStart, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v > 1 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.season_pv = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.season_pv = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": "",
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 2550,
+  "y": 400,
+  "wires": [
+   [
+    "pv_qt_season_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_season_grid",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahreszeit Grid",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.grid_consumption\" WHERE time >= now() - 92d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2540,
+  "y": 460,
+  "wires": [
+   [
+    "pv_qt_s_season_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_season_grid",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahreszeit Grid",
+  "func": "try {\n    const now = new Date();\n    const month = now.getUTCMonth();\n    const qStart = [0,0,0,3,3,3,6,6,6,9,9,9][month];\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), qStart, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v >= 0 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.season_grid = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.season_grid = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": "",
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 2560,
+  "y": 520,
+  "wires": [
+   [
+    "pv_qt_year_load",
+    "1cdd0af75a3c4f51"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_year_load",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahr Load",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.load_consumption\" WHERE time >= now() - 366d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2520,
+  "y": 580,
+  "wires": [
+   [
+    "pv_qt_s_year_load"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_year_load",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahr Load",
+  "func": "try {\n    const now = new Date();\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v > 1 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.year_load = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.year_load = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 2540,
+  "y": 640,
+  "wires": [
+   [
+    "pv_qt_year_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_year_pv",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahr PV",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.pv_production\" WHERE time >= now() - 366d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2520,
+  "y": 700,
+  "wires": [
+   [
+    "pv_qt_s_year_pv"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_year_pv",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahr PV",
+  "func": "try {\n    const now = new Date();\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v > 1 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.year_pv = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.year_pv = null; }\nreturn msg;",
+  "outputs": 1,
+  "x": 2540,
+  "y": 760,
+  "wires": [
+   [
+    "pv_qt_year_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_year_grid",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "influxdb": "79793719ce0e984a",
+  "name": "Jahr Grid",
+  "query": "SELECT max(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"javascript.0.SolarDaily.daily.grid_consumption\" WHERE time >= now() - 366d GROUP BY time(1d, 22h) fill(null)",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "",
+  "x": 2520,
+  "y": 820,
+  "wires": [
+   [
+    "pv_qt_s_year_grid"
+   ]
+  ]
+ },
+ {
+  "id": "pv_qt_s_year_grid",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "store Jahr Grid + flow.set()",
+  "func": "try {\n    const now = new Date();\n    const cutoff = new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 22, 0, 0));\n    const vals = msg.payload.filter(r => r.v >= 0 && new Date(r.time) >= cutoff).map(r => r.v);\n    msg._q.year_grid = vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;\n} catch(e) { msg._q.year_grid = null; }\n\n// Quoten berechnen und in flow context speichern\nfunction quot(load, pv, grid) {\n    if (!load || !pv || grid === null || grid === undefined) return { aut: null, ev: null };\n    return {\n        aut: Math.round(Math.max(0, Math.min(100, (load - grid) / load * 100)) * 10) / 10,\n        ev:  Math.round(Math.max(0, Math.min(100, load / pv * 100)) * 10) / 10\n    };\n}\nnode.warn(JSON.stringify(msg._q))\nconst q = msg._q;\nconst quoten = {\n    woche:  quot(q.week_load,   q.week_pv,   q.week_grid),\n    season: quot(q.season_load, q.season_pv, q.season_grid),\n    jahr:   quot(q.year_load,   q.year_pv,   q.year_grid),\n    ts:     new Date().toISOString()\n};\n\nflow.set('pv_quoten', quoten);\nnode.warn('Quoten gespeichert: ' + JSON.stringify(quoten));\nreturn msg;",
+  "outputs": 1,
+  "timeout": "",
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 2580,
+  "y": 880,
+  "wires": [
+   [
+    "1fc535d85a80452e"
+   ]
+  ]
+ },
+ {
+  "id": "pv_quoten_timer_comment",
+  "type": "comment",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "Quoten Timer — läuft alle 30min, unabhängig von /pv-data",
+  "info": "Berechnet Woche/Jahreszeit/Jahr-Quoten und speichert sie\nin flow.get('pv_quoten').\n\nDer /pv-data Endpoint liest die Quoten nur noch aus dem\nflow context — keine schweren Queries bei jedem Aufruf.\n\nAlten Quoten-Addon-Flow (pv_q_week_load etc.) aus der\n/pv-data Kette entfernen!",
+  "x": 2390,
+  "y": 280,
+  "wires": []
+ },
+ {
+  "id": "bed0205765d3de1b",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "solar estimate",
+  "query": "SELECT sum(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"pvforecast.0.summary.power\" WHERE time > now() AND time <= now() + 24h",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "organisation",
+  "x": 1220,
+  "y": 340,
+  "wires": [
+   [
+    "6d43834b0b13a977"
+   ]
+  ]
+ },
+ {
+  "id": "6d43834b0b13a977",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store estimate",
+  "func": "msg._d = msg._d || {};\ntry { msg._d.forecast_tomorrow_kwh = msg.payload[0].v / 1000; } catch(e) { msg._d.forecast_tomorrow_kwh = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": 0,
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 1220,
+  "y": 280,
+  "wires": [
+   [
+    "8daef8610abeeb4b"
+   ]
+  ]
+ },
+ {
+  "id": "8daef8610abeeb4b",
+  "type": "influxdb in",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "influxdb": "79793719ce0e984a",
+  "name": "forecast",
+  "query": "SELECT sum(\"value\") AS \"v\" FROM \"iobroker\".\"autogen\".\"pvforecast.0.summary.power\" WHERE time > now() AND time <= now() + 24h",
+  "rawOutput": false,
+  "precision": "",
+  "retentionPolicy": "",
+  "org": "organisation",
+  "x": 1480,
+  "y": 280,
+  "wires": [
+   [
+    "85bc6828e88f0133"
+   ]
+  ]
+ },
+ {
+  "id": "85bc6828e88f0133",
+  "type": "function",
+  "z": "393ff6be375b899a",
+  "g": "343cf4dfe110ab1d",
+  "name": "store forecast",
+  "func": "msg._d = msg._d || {};\ntry { msg._d.forecast_tomorrow_kwh = msg.payload[0].v / 1000; } catch(e) { msg._d.forecast_tomorrow_kwh = null; }\nreturn msg;",
+  "outputs": 1,
+  "timeout": 0,
+  "noerr": 0,
+  "initialize": "",
+  "finalize": "",
+  "libs": [],
+  "x": 1500,
+  "y": 340,
+  "wires": [
+   [
+    "17be6e804e34f9a0"
+   ]
+  ]
+ },
+ {
+  "id": "1cdd0af75a3c4f51",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "name": "debug 29",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "_q.season_grid",
+  "targetType": "msg",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 2900,
+  "y": 540,
+  "wires": []
+ },
+ {
+  "id": "1fc535d85a80452e",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "g": "2700c591ae70ded0",
+  "name": "debug 30",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "_q",
+  "targetType": "msg",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 2890,
+  "y": 660,
+  "wires": []
+ },
+ {
+  "id": "0fc4d72835f4041c",
+  "type": "debug",
+  "z": "393ff6be375b899a",
+  "name": "debug 31",
+  "active": true,
+  "tosidebar": true,
+  "console": false,
+  "tostatus": false,
+  "complete": "false",
+  "statusVal": "",
+  "statusType": "auto",
+  "x": 2420,
+  "y": 1000,
+  "wires": []
+ }
+]

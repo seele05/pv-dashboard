@@ -1,0 +1,7 @@
+node_modules/
+config.js
+config.local.json
+*-state.json
+*-state.json.tmp
+.DS_Store
+.claude/
