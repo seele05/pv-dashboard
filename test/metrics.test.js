@@ -204,14 +204,14 @@ test('Nacht/Tag/Abend-Split aus den Ankerpunkten', () => {
 });
 
 
-test('Energiebilanz: realer Tag mit Netzladung des Akkus geht auf', () => {
+test('Energiebilanz: Tag mit Netzladung des Akkus geht auf', () => {
     const { balance } = require('../lib/energy');
-    // PV 31,0 + Netz 10,1 = Verbrauch 10,8 + Akku netto 23,9 + Anlage 6,4
-    const b = balance({ pv: 31.0, grid: 10.1, load: 10.8, batIn: 26.0, batOut: -2.1 });
-    assert.ok(Math.abs(b.batNet - 23.9) < 1e-9);
-    assert.ok(Math.abs(b.systemOwn - 6.4) < 1e-9);
-    assert.equal(b.autarkie, 75.4);          // 31 / 41,1 (Original: (10,8 - 10,1) / 10,8 = 6,5 %)
-    assert.equal(b.wirkungsgrad, 62.8);      // 10,8 / (41,1 - 23,9)
+    // PV 20 + Netz 5 = Verbrauch 8 + Akku netto 13 + Anlage 4
+    const b = balance({ pv: 20.0, grid: 5.0, load: 8.0, batIn: 14.0, batOut: -1.0 });
+    assert.ok(Math.abs(b.batNet - 13.0) < 1e-9);
+    assert.ok(Math.abs(b.systemOwn - 4.0) < 1e-9);
+    assert.equal(b.autarkie, 80);            // 20 / 25 (Original: (8 - 5) / 8 = 37,5 %)
+    assert.equal(b.wirkungsgrad, 66.7);      // 8 / (25 - 13)
 
     // Akku entlaedt netto: Energie aus dem Akku zaehlt zur umgesetzten Energie
     const n = balance({ pv: 2, grid: 1, load: 8, batIn: 0, batOut: 6 });
