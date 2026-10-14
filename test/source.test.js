@@ -196,12 +196,14 @@ test('Aggregate: 3 Tagesreihen ueber 366 Tage + Lastprofil 14 Tage in einer Abfr
         const { quoten, loadProfile, errors } = await src.aggregates(now);
         assert.equal(fake.requests.length, 1);
         const q = new URLSearchParams(fake.requests[0].body).get('q');
-        assert.equal(q.split(';\n').length, 4);
+        assert.equal(q.split(';\n').length, 6);
         assert.match(q, /now\(\) - 366d GROUP BY time\(1d\) fill\(null\) tz\('Europe\/Berlin'\)/);
         assert.match(q, /FROM "testdb"\."autogen"\."load" WHERE time >= now\(\) - 14d GROUP BY time\(1h\) fill\(none\) tz\('Europe\/Berlin'\)/);
         assert.deepEqual(errors, []);
-        assert.deepEqual(quoten.woche, { aut: 80, ev: 50 });
-        assert.deepEqual(quoten.jahr, { aut: 80, ev: 50 });
+        // PV 20, Netz 2, Verbrauch 10, Akku je 2 rein/raus: Autarkie 20/22, Wirkungsgrad 10/22
+        assert.equal(quoten.woche.aut, 90.9);
+        assert.equal(quoten.woche.ev, 45.5);
+        assert.equal(quoten.jahr.aut, 90.9);
         assert.equal(loadProfile[2], 250);
         assert.equal(loadProfile[20], 800);
     } finally {

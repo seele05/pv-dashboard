@@ -19,6 +19,8 @@
   --night: #6250d6;
   --day: #eda100;
   --eve: #e87ba4;
+  --grid: #008300;
+  --sys: #e34948;
 
   /* Status (immer mit Symbol + Text) */
   --ok: #0ca30c;
@@ -48,6 +50,8 @@
     --night: #9085e9;
     --day: #c98500;
     --eve: #d55181;
+    --grid: #008300;
+    --sys: #e66767;
     --inf: #3987e5;
     --shadow: none;
   }
@@ -148,6 +152,22 @@ body {
 .sw-night { background: var(--night); }
 .sw-day { background: var(--day); }
 .sw-eve { background: var(--eve); }
+.sw-grid { background: var(--grid); }
+.sw-sys { background: var(--sys); }
+.sw-rest { background: var(--track); outline: 1px solid var(--ink-3); outline-offset: -1px; }
+
+/* Energiebilanz heute: Zufuhr und Verwendung auf gleicher Skala */
+.bal-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.84rem; color: var(--ink-2); margin: 4px 0 6px; }
+.bal-head b { color: var(--ink); font-size: 0.95rem; }
+.bal-bar { height: 14px; border-radius: 7px; background: transparent; }
+.bal-bar span { border-radius: 2px; }
+.bal-bar .b-pv { background: var(--pv); }
+.bal-bar .b-grid { background: var(--grid); }
+.bal-bar .b-batout, .bal-bar .b-batin { background: var(--bat); }
+.bal-bar .b-load { background: var(--load); }
+.bal-bar .b-sys { background: var(--sys); }
+.bal-bar .b-rest { background: var(--track); }
+.bal-legend { margin: 6px 0 12px; }
 
 /* Akku */
 .bat-meta { display: flex; justify-content: space-between; gap: 10px; font-size: 0.78rem; }
@@ -178,8 +198,8 @@ body {
 .quotes .qp { font-size: 0.84rem; color: var(--ink-2); align-self: center; }
 .quotes .qv b { display: block; font-size: 0.95rem; font-weight: 600; text-align: right; }
 .quotes .track { height: 5px; margin-top: 5px; }
-.quotes .fill { background: var(--load); }
-.quotes .fill.ev { background: var(--pv); }
+.quotes .fill { background: var(--pv); }
+.quotes .fill.ev { background: var(--load); }
 .quotes > :nth-last-child(-n+3) { border-bottom: 0; }
 .hint { font-size: 0.74rem; margin-top: 10px; }
 
