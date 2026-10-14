@@ -131,11 +131,8 @@
     setText('minSocText', 'Reserve ' + NF0.format(meta.battery.minSoc) + ' %');
     setText('batState', DIR_TEXT[d.bat_direction] || '–');
 
-    // Heute
-    setText('dPv', fmtKwh(d.daily_pv_kwh));
-    setText('dLoad', fmtKwh(d.daily_load_kwh));
-    setText('dGrid', fmtKwh(d.daily_grid_kwh));
-    setText('dWr', fmtKwh(d.wr_eigenverbrauch));
+    // Heute: Energiebilanz
+    renderBalance(d);
     setText('dNight', fmtKwh(d.kwh_nacht));
     // Vor 17:00 liefert die API (wie das Original) keinen Tageswert; angezeigt wird der bisherige
     const dayPartial = !isNum(d.kwh_tag) && isNum(d.kwh_nacht) && isNum(d.daily_load_kwh)
@@ -163,8 +160,8 @@
     const quotes = $('quotes');
     const cell = (v, cls) => '<div class="qv" role="cell"><b>' + fmtPct(v) + '</b><div class="track"><span class="fill' + cls + '" data-w="' + (isNum(v) ? v : 0) + '"></span></div></div>';
     const html = '<div class="qh" role="columnheader">Zeitraum</div>' +
-      '<div class="qh" role="columnheader"><i class="sw sw-load" aria-hidden="true"></i>Autarkie</div>' +
-      '<div class="qh" role="columnheader"><i class="sw sw-pv" aria-hidden="true"></i>Eigenverbrauch</div>' +
+      '<div class="qh" role="columnheader"><i class="sw sw-pv" aria-hidden="true"></i>Autarkie</div>' +
+      '<div class="qh" role="columnheader"><i class="sw sw-load" aria-hidden="true"></i>Wirkungsgrad</div>' +
       PERIODS.map(([key, label]) => '<div class="qp" role="rowheader">' + label + '</div>' +
         cell(d['autarkie_' + key], '') + cell(d['eigenverbrauch_' + key], ' ev')).join('');
     if (quotes._html !== html) {
@@ -172,6 +169,72 @@
       quotes._html = html;
       quotes.querySelectorAll('.fill[data-w]').forEach(f => { f.style.width = f.dataset.w + '%'; });
     }
+    const own = [['heute', d.wr_eigenverbrauch], ['7 Tage', d.system_own_woche_kwh], ['Quartal', d.system_own_season_kwh], ['Jahr', d.system_own_jahr_kwh]]
+      .filter(([, v]) => isNum(v)).map(([k, v]) => k + ' ' + NF1.format(v) + ' kWh');
+    setText('sysOwnLine', own.length ? 'Eigenverbrauch der Anlage: ' + own.join(' · ') : '');
+  }
+
+  /* ---------- Energiebilanz heute ---------- */
+  function legendItems(items) {
+    return items.map(([cls, label, v]) => '<li><i class="sw ' + cls + '" aria-hidden="true"></i>' + label + '<b>' + fmtKwh(v) + '</b></li>').join('');
+  }
+
+  function fillStack(id, parts, scale) {
+    const bar = $(id);
+    bar.replaceChildren(...parts.filter(p => p[1] > 0).map(([cls, v]) => {
+      const seg = document.createElement('span');
+      seg.className = cls;
+      seg.style.width = (v / scale * 100).toFixed(2) + '%';
+      return seg;
+    }));
+  }
+
+  function renderBalance(d) {
+    const pv = d.daily_pv_kwh, grid = d.daily_grid_kwh, load = d.daily_load_kwh;
+    const bIn = d.daily_bat_in_kwh, bOut = d.daily_bat_out_kwh;
+    if (!isNum(pv) || !isNum(grid) || !isNum(load)) {
+      ['balIn', 'balOut'].forEach(id => $(id).replaceChildren());
+      setText('balInSum', '–'); setText('balOutSum', '–');
+      $('balInLegend').innerHTML = ''; $('balOutLegend').innerHTML = '';
+      setText('balNote', 'Tageszähler nicht verfügbar.');
+      return;
+    }
+    const hasBat = isNum(bIn) && isNum(bOut);
+    const net = hasBat ? bIn - bOut : null;             // > 0: Akku hat aufgenommen
+    const own = isNum(d.wr_eigenverbrauch) ? d.wr_eigenverbrauch : null;
+
+    // Zufuhr: Akku (bei Netto-Entladung), PV, Netz – Reihenfolge so, dass Nachbarfarben unterscheidbar sind
+    const inParts = [];
+    if (net !== null && net < 0) inParts.push(['b-batout', -net]);
+    inParts.push(['b-pv', pv], ['b-grid', grid]);
+    // Verwendung: Verbrauch, in den Akku (Netto-Ladung), Anlage
+    const outParts = [['b-load', load]];
+    if (net !== null && net > 0) outParts.push(['b-batin', net]);
+    if (own !== null && own > 0) outParts.push(['b-sys', own]);
+    if (!hasBat) outParts.push(['b-rest', Math.max(0, pv + grid - load)]);
+
+    const inSum = inParts.reduce((s, p) => s + p[1], 0);
+    const outSum = outParts.reduce((s, p) => s + p[1], 0);
+    const scale = Math.max(inSum, outSum) || 1;
+    fillStack('balIn', inParts, scale);
+    fillStack('balOut', outParts, scale);
+    setText('balInSum', fmtKwh(inSum));
+    // per Definition gleich gross; Abweichungen entstuenden nur durch Rundung der Einzelwerte
+    setText('balOutSum', fmtKwh(hasBat && own !== null && own >= 0 ? inSum : outSum));
+
+    const inLegend = [['sw-pv', 'PV erzeugt', pv], ['sw-grid', 'Netzbezug', grid]];
+    if (net !== null && net < 0) inLegend.unshift(['sw-bat', 'aus dem Akku (netto)', -net]);
+    const outLegend = [['sw-load', 'Verbrauch', load]];
+    if (net !== null && net > 0) outLegend.push(['sw-bat', 'in den Akku (netto)', net]);
+    if (own !== null) outLegend.push(['sw-sys', 'Anlage (WR + Wandler)', own]);
+    if (!hasBat) outLegend.push(['sw-rest', 'Akku + Anlage (ohne Akku-Zähler)', Math.max(0, pv + grid - load)]);
+    const li = legendItems(inLegend), lo = legendItems(outLegend);
+    if ($('balInLegend')._html !== li) { $('balInLegend').innerHTML = li; $('balInLegend')._html = li; }
+    if ($('balOutLegend')._html !== lo) { $('balOutLegend').innerHTML = lo; $('balOutLegend')._html = lo; }
+
+    setText('balNote', hasBat
+      ? 'Akku geladen ' + fmtKwh(bIn) + ' · entladen ' + fmtKwh(bOut) + (own !== null && own < 0 ? ' · Bilanz geht nicht auf (Zähler prüfen)' : '')
+      : 'Ohne Akku-Zähler lassen sich Akku und Anlagen-Eigenverbrauch nicht trennen.');
   }
 
   /* ---------- PV-Prognose ---------- */

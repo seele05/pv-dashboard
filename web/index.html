@@ -112,20 +112,16 @@
 
     <!-- Heute -->
     <section class="card" aria-labelledby="h-today">
-      <h2 id="h-today">Heute</h2>
-      <dl class="kv num">
-        <div><dt>PV erzeugt</dt><dd id="dPv">–</dd></div>
-        <div><dt>Verbrauch</dt><dd id="dLoad">–</dd></div>
-        <div><dt>Netzbezug</dt><dd id="dGrid">–</dd></div>
-        <div><dt>WR-Eigenverbrauch</dt><dd id="dWr">–</dd></div>
-      </dl>
-      <h3>Verbrauch nach Tageszeit</h3>
-      <div class="stack" id="splitBar" role="img" aria-label="Verbrauch nach Tageszeit"></div>
-      <ul class="legend num" id="splitLegend">
-        <li><i class="sw sw-night" aria-hidden="true"></i>Nacht 0–6 Uhr<b id="dNight">–</b></li>
-        <li><i class="sw sw-day" aria-hidden="true"></i><span id="lDay">Tag 6–17 Uhr</span><b id="dDay">–</b></li>
-        <li><i class="sw sw-eve" aria-hidden="true"></i>Abend ab 17 Uhr<b id="dEve">–</b></li>
-      </ul>
+      <h2 id="h-today">Heute · Energiebilanz</h2>
+      <div class="bal num">
+        <div class="bal-head"><span>Zufuhr</span><b id="balInSum">–</b></div>
+        <div class="stack bal-bar" id="balIn" role="img" aria-label="Energiezufuhr heute"></div>
+        <ul class="legend bal-legend" id="balInLegend"></ul>
+        <div class="bal-head"><span>Verwendung</span><b id="balOutSum">–</b></div>
+        <div class="stack bal-bar" id="balOut" role="img" aria-label="Energieverwendung heute"></div>
+        <ul class="legend bal-legend" id="balOutLegend"></ul>
+      </div>
+      <div class="sub-line muted num" id="balNote"></div>
     </section>
 
     <!-- Vergleich -->
@@ -137,13 +133,21 @@
         <div><dt>Gestern</dt><dd id="cYest">–</dd></div>
         <div><dt>Gestern vs. Ø</dt><dd id="cYestDelta">–</dd></div>
       </dl>
+      <h3>Verbrauch nach Tageszeit</h3>
+      <div class="stack" id="splitBar" role="img" aria-label="Verbrauch nach Tageszeit"></div>
+      <ul class="legend num" id="splitLegend">
+        <li><i class="sw sw-night" aria-hidden="true"></i>Nacht 0–6 Uhr<b id="dNight">–</b></li>
+        <li><i class="sw sw-day" aria-hidden="true"></i><span id="lDay">Tag 6–17 Uhr</span><b id="dDay">–</b></li>
+        <li><i class="sw sw-eve" aria-hidden="true"></i>Abend ab 17 Uhr<b id="dEve">–</b></li>
+      </ul>
     </section>
 
     <!-- Quoten -->
     <section class="card" aria-labelledby="h-quote">
-      <h2 id="h-quote">Autarkie &amp; Eigenverbrauch</h2>
-      <div class="quotes num" id="quotes" role="table" aria-label="Autarkie und Eigenverbrauch je Zeitraum"></div>
-      <p class="hint muted">Autarkie = Anteil des Verbrauchs ohne Netzbezug. Eigenverbrauch = Verbrauch im Verhältnis zur PV-Erzeugung (wie im bisherigen Dashboard), auf 100 % begrenzt.</p>
+      <h2 id="h-quote">Autarkie &amp; Wirkungsgrad</h2>
+      <div class="quotes num" id="quotes" role="table" aria-label="Autarkie und Wirkungsgrad je Zeitraum"></div>
+      <div class="sub-line muted num" id="sysOwnLine"></div>
+      <p class="hint muted"><b>Autarkie</b> = PV ÷ (PV + Netz): Anteil der Sonne an der gesamten Energiezufuhr – egal, ob Netzstrom Verbraucher oder Akku speist. <b>Wirkungsgrad</b> = Verbrauch ÷ umgesetzte Energie (PV + Netz − Akku netto): was davon bei den Verbrauchern ankommt; der Rest ist der Eigenverbrauch der Anlage (Wechselrichter, Wandler).</p>
     </section>
   </main>
 
