@@ -82,9 +82,9 @@ Eine Seite, die sich an die Bildschirmbreite anpasst: einspaltig auf dem Handy, 
 - **Restreichweite** – „smarte“ Reichweite als Energiebilanz bis Ende morgen (Akku + PV-Prognose − erwarteter Verbrauch) mit Zeitpunkt „Akku leer“ bzw. tiefstem Akkustand und Status *Reicht bis Ende morgen / Ausreichend / Niedrig / Kritisch*, dazu die reine Akku-Reichweite bei aktueller Last
 - **Leistung aktuell** – PV, Verbrauch, Akku, Prognose als Balken, Überschuss/Defizit
 - **PV-Prognose** – Ertrag morgen mit Spitzenleistung und Anteil am Ø-Tagesverbrauch; heute erwartet, bisher erzeugt, noch erwartet; gestern Prognose gegen Ist; Diagramm heute + morgen (Prognose und gemessene Leistung, mit Fadenkreuz) und Stundentabelle
-- **Heute** – PV, Verbrauch, Netzbezug, WR-Eigenverbrauch, Verbrauch nach Tageszeit (Nacht/Tag/Abend)
-- **Verbrauch im Vergleich** – Ø 30 Tage, heute und gestern im Vergleich zum Ø
-- **Autarkie & Eigenverbrauch** – heute, 7 Tage, Quartal, Jahr
+- **Heute · Energiebilanz** – zwei gleich lange Balken: Zufuhr (PV, Netz, ggf. aus dem Akku) und Verwendung (Verbrauch, in den Akku, Eigenverbrauch der Anlage), dazu Akku geladen/entladen
+- **Verbrauch im Vergleich** – Ø 30 Tage, heute und gestern im Vergleich zum Ø, Verbrauch nach Tageszeit (Nacht/Tag/Abend)
+- **Autarkie & Wirkungsgrad** – heute, 7 Tage, Quartal, Jahr, dazu der Eigenverbrauch der Anlage je Zeitraum
 
 Die Seite aktualisiert sich alle `pollSeconds`, pausiert im Hintergrund und zeigt ohne Verbindung den zuletzt geladenen Stand (deutlich als „Offline“ markiert). Der Service Worker hält nur die App-Hülle vor; API-Antworten werden nie aus dem Cache geliefert.
 
@@ -106,11 +106,11 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 |---|---|---|
 | `smart_range_label`, `smart_range_status` | – | Reichweite aus der Energiebilanz bis Ende morgen (siehe [Berechnungen](#berechnungen)); `∞`/`infinite`, wenn der Akku durchhält, sonst Stunden bis leer mit Status `ok`/`warn`/`crit` (leer vor Ende morgen: mindestens `warn`) |
 | `forecast_tomorrow_kwh` | kWh | Prognose morgen 0–24 Uhr (lokal), über die Zeit integriert |
-| `autarkie_heute`, `eigenverbrauch_heute` | % | Quoten aus den Tageszählern |
+| `autarkie_heute`, `eigenverbrauch_heute` | % | Autarkie und **Wirkungsgrad** heute (Feldname `eigenverbrauch_*` aus Kompatibilität, siehe [Energiebilanz](#energiebilanz-autarkie-wirkungsgrad)) |
 | `autarkie_woche`, `eigenverbrauch_woche` | % | letzte 7 Tage |
 | `autarkie_season`, `eigenverbrauch_season` | % | seit Beginn des Kalenderquartals |
 | `autarkie_jahr`, `eigenverbrauch_jahr` | % | seit 1. Januar |
-| `wr_eigenverbrauch` | kWh | PV − Verbrauch − Akku geladen + \|Akku entladen\| (heute) |
+| `wr_eigenverbrauch` | kWh | Eigenverbrauch der Anlage heute = PV + Netz − Verbrauch − Akku netto |
 | `ts` | ISO 8601 | Zeitpunkt der Berechnung |
 | `soc` | % | Akku-Ladezustand |
 | `avail_kwh` | kWh | (SOC − Mindest-SOC) × Kapazität |
@@ -132,15 +132,28 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `smart_range_min_kwh`, `smart_range_min_ts` | kWh, ISO 8601 | tiefster nutzbarer Akkustand im Rechenzeitraum und wann |
 | `smart_range_until_ts` | ISO 8601 | Ende des Rechenzeitraums (Ende morgen, lokal) |
 | `smart_range_basis` | – | Grundlage des Verbrauchs: `lastprofil`, `durchschnitt` (Ø 30 Tage / 24) oder `aktuelle_last` |
+| `daily_bat_in_kwh`, `daily_bat_out_kwh` | kWh | Akku heute geladen / entladen (beide positiv) |
+| `system_own_woche_kwh`, `system_own_season_kwh`, `system_own_jahr_kwh` | kWh | Eigenverbrauch der Anlage im Zeitraum |
 
 ## Berechnungen
 
-Die Formeln sind 1:1 aus der Node-RED-Function „Berechnen + JSON Response“ und den Quoten-Functions übernommen (`lib/metrics.js`, reine Funktionen mit Unit-Tests):
+Grundlage sind die Node-RED-Function „Berechnen + JSON Response“ und die Quoten-Functions (`lib/metrics.js`, reine Funktionen mit Unit-Tests). Wo das Original falsch rechnete, ist das hier korrigiert und unter [Abweichungen](#migration-vom-node-red-flow) aufgeführt.
 
 - **Reichweite:** `> 72 h` → ok, `≥ 8 h` ok, `≥ 3 h` warn, `≥ 1 h` crit, darunter Minuten, crit. Die einfache Reichweite (`range_*`) ist wie im Original nutzbare Akku-Energie ÷ aktuelles Defizit.
 - **Smarte Reichweite** (`lib/range.js`): Energiebilanz in 15-min-Schritten von jetzt bis Ende morgen: *Akku + PV-Prognose − erwarteter Verbrauch*, nach oben begrenzt auf die nutzbare Kapazität ((100 − Mindest-SOC) % × Kapazität; Überschuss bei vollem Akku verfällt), nach unten auf den Mindest-SOC. Erwarteter Verbrauch: Lastprofil je Uhrzeit (Ø der Stundenmittel von `measurements.load` der letzten 14 Tage), ohne Profil Ø 30 Tage / 24, sonst aktuelle Last. Wird der Akku leer, ist die Reichweite die Zeit bis dahin – und der Status dann mindestens „Niedrig“, auch wenn es mehr als 8 h sind.
-- **Autarkie** = (Verbrauch − Netzbezug) / Verbrauch, **Eigenverbrauch** = Verbrauch / PV – jeweils auf 0–100 % begrenzt, 0,1 % gerundet. Fehlen Verbrauch oder PV (oder sind 0), ist die Quote `null`.
-- **Woche:** Summe der letzten 7 Tageswerte (Verbrauch/PV > 1 kWh, Netz ≥ 0) aus den letzten 8 Tagen. **Quartal/Jahr:** alle Tageswerte ab Quartals- bzw. Jahresbeginn.
+- **Zeiträume:** tageweise abgeglichen – ein Tag zählt, wenn Verbrauch (> 1 kWh), PV und Netz vorliegen; alle Summen stammen aus denselben Tagen. **Woche:** die letzten 7 solcher Tage aus den letzten 8. **Quartal/Jahr:** alle Tage ab Quartals- bzw. Jahresbeginn.
+
+### Energiebilanz, Autarkie, Wirkungsgrad
+
+Aus den Tageszählern (`lib/energy.js`):
+
+> PV + Netz = Verbrauch + Akku netto + Eigenverbrauch der Anlage   (Akku netto = geladen − entladen)
+
+- **Eigenverbrauch der Anlage** = PV + Netz − Verbrauch − Akku netto – Wechselrichter im Leerlauf und Wandler-/Ladeverluste. Beispiel: 4 Wechselrichter × 40 W × 24 h ≈ 3,8 kWh plus Wandlerverluste.
+- **Autarkie** = PV ÷ (PV + Netz) – Anteil der Sonne an der gesamten Energiezufuhr. Unabhängig davon, ob Netzstrom die Verbraucher oder den Akku speist, und ohne Akku-Zähler berechenbar.
+- **Wirkungsgrad** = Verbrauch ÷ (PV + Netz − Akku netto) – Anteil der im Zeitraum umgesetzten Energie, der bei den Verbrauchern ankommt. Braucht die Akku-Zähler (`measurements.daily.batIn/batOut`).
+- Werte auf 0–100 % begrenzt, 0,1 % gerundet; fehlende Zähler → `null`.
+- Annahme: keine Netzeinspeisung (SolarDaily zählt nur Bezug). Abgeregelte PV taucht im PV-Zähler nicht auf und verfälscht nichts.
 - **Nacht/Tag/Abend:** aus dem Verbrauchszähler um 06:00 und 17:00 (jeweils erster Wert im Fenster ± 15 min). Wie im Original gibt es den Tageswert erst ab 17 Uhr; die Oberfläche zeigt vorher den bisherigen Verbrauch seit 6 Uhr.
 - **Gestern:** vorletzter Tageswert > 1 kWh der 32-Tage-Reihe (wie im Original – ist heute noch ≤ 1 kWh, ist das der Vorvortag).
 
@@ -209,6 +222,10 @@ Das bisherige Original (Node-RED-Tab, Widget, ioBroker-Skript) liegt unveränder
 | Berechnung je HTTP-Aufruf | Berechnung je Zyklus, Antwort aus dem Speicher | beliebig viele Clients ohne Zusatzlast |
 | Anker 22:00 abgefragt, aber nicht verwendet; Prognose-Summe doppelt abgefragt | entfällt | – |
 | `forecast_tomorrow_kwh` = `sum(value)/1000` der nächsten 24 h | Kalendertag morgen 0–24 Uhr, über die Zeit integriert | richtig bei jedem Raster; „morgen“ heißt morgen |
+| Autarkie = (Verbrauch − Netz) ÷ Verbrauch | PV ÷ (PV + Netz) | lädt Netzstrom den Akku, zählte er voll gegen den Verbrauch: Beispiel: 20 kWh PV, 8 kWh Verbrauch, 5 kWh Netz (in den Akku) ergab 37,5 % statt 80 % |
+| „Eigenverbrauch“ = Verbrauch ÷ PV (gekappt auf 100 %) | Wirkungsgrad = Verbrauch ÷ (PV + Netz − Akku netto); API-Feld `eigenverbrauch_*` behält den Namen | keine Eigenverbrauchsquote; bei einer Inselanlage ohne Einspeisung läge die echte Quote immer bei ~100 % |
+| WR-Eigenverbrauch = PV − Verbrauch − geladen + entladen | PV + Netz − Verbrauch − Akku netto | Netzbezug fehlte, Ergebnis konnte negativ werden (Beispiel oben mit 14 kWh geladen, 1 kWh entladen: −1 kWh statt 4 kWh) |
+| Woche/Quartal/Jahr: jede Reihe für sich gefiltert | tageweise abgeglichen | PV und Verbrauch konnten aus unterschiedlichen Tagen stammen |
 | Smarte Reichweite: Akku + Prognose ≥ Ø-Tagesverbrauch → „∞ Morgen genug“, sonst (Akku + Prognose) ÷ Ø-Stundenverbrauch | Energiebilanz über die Zeit mit Lastprofil und Akku-Kapazität, Zeitpunkt „Akku leer“ | das Original zählte die Sonne von morgen, als läge sie schon im Akku: um 21 Uhr mit 2 kWh Akku und 20 kWh Prognose zeigte es „∞“, obwohl der Akku um Mitternacht leer ist; die Sonne von heute fehlte ganz |
 | Widget-Beschriftung „Nacht 22–06“, „Abend 17–22“ | „Nacht 0–6 Uhr“, „Abend ab 17 Uhr“ | entspricht der tatsächlichen Berechnung (Zähler startet um 0 Uhr, Abend läuft bis jetzt) |
 | Google Fonts | System-Schriften | keine externen Requests |
