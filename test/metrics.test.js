@@ -46,7 +46,7 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis']]);
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh']]);
 });
 
 
@@ -204,21 +204,38 @@ test('Nacht/Tag/Abend-Split aus den Ankerpunkten', () => {
 });
 
 
-test('Quoten heute: Autarkie und "Eigenverbrauch" (Last/PV) mit Begrenzung', () => {
-    assert.deepEqual(m.quote(10, 8, 2), { autarkie: 80, eigenverbrauch: 100 });
-    assert.deepEqual(m.quote(10, 20, 0), { autarkie: 100, eigenverbrauch: 50 });
-    assert.deepEqual(m.quote(10, 20, 12), { autarkie: 0, eigenverbrauch: 50 });
-    assert.deepEqual(m.quote(0, 20, 0), { autarkie: null, eigenverbrauch: null });
-    assert.deepEqual(m.quote(10, null, 0), { autarkie: null, eigenverbrauch: null });
-    assert.deepEqual(m.quote(10, 5, null), { autarkie: null, eigenverbrauch: null });
-    assert.deepEqual(m.quote(3, 7, 0.1), { autarkie: 96.7, eigenverbrauch: 42.9 });
+test('Energiebilanz: realer Tag mit Netzladung des Akkus geht auf', () => {
+    const { balance } = require('../lib/energy');
+    // PV 31,0 + Netz 10,1 = Verbrauch 10,8 + Akku netto 23,9 + Anlage 6,4
+    const b = balance({ pv: 31.0, grid: 10.1, load: 10.8, batIn: 26.0, batOut: -2.1 });
+    assert.ok(Math.abs(b.batNet - 23.9) < 1e-9);
+    assert.ok(Math.abs(b.systemOwn - 6.4) < 1e-9);
+    assert.equal(b.autarkie, 75.4);          // 31 / 41,1 (Original: (10,8 - 10,1) / 10,8 = 6,5 %)
+    assert.equal(b.wirkungsgrad, 62.8);      // 10,8 / (41,1 - 23,9)
+
+    // Akku entlaedt netto: Energie aus dem Akku zaehlt zur umgesetzten Energie
+    const n = balance({ pv: 2, grid: 1, load: 8, batIn: 0, batOut: 6 });
+    assert.equal(n.batNet, -6);
+    assert.equal(n.systemOwn, 1);
+    assert.equal(n.wirkungsgrad, 88.9);      // 8 / 9
+    assert.equal(n.autarkie, 66.7);          // 2 / 3
+
+    // fehlende Akku-Zaehler: Autarkie geht trotzdem, Anlage/Wirkungsgrad nicht
+    const o = balance({ pv: 5, grid: 5, load: 8 });
+    assert.equal(o.autarkie, 50);
+    assert.equal(o.systemOwn, null);
+    assert.equal(o.wirkungsgrad, null);
+    assert.deepEqual(balance({ pv: 0, grid: 0, load: 0, batIn: 0, batOut: 0 }).autarkie, null);
+    assert.equal(balance({ pv: null, grid: 1 }).autarkie, null);
 });
 
 
 test('WR-Eigenverbrauch, Akku-Richtung, Rundung', () => {
     const out = m.computePayload(raw(), null, OPTS);
-    // 8,2 - 7,4 - 3 + |−2,5| = 0,3
-    assert.equal(out.wr_eigenverbrauch, 0.3);
+    // Anlagen-Eigenverbrauch = 8,2 + 0,3 - 7,4 - (3 - 2,5) = 0,6 (Original ohne Netz: 0,3)
+    assert.equal(out.wr_eigenverbrauch, 0.6);
+    assert.equal(out.daily_bat_in_kwh, 3);
+    assert.equal(out.daily_bat_out_kwh, 2.5);
     assert.equal(out.net_kw, 1.2);
     assert.equal(out.bat_direction, 'charging');
     assert.equal(m.computePayload(raw({ bat_w: -51 }), null, OPTS).bat_direction, 'discharging');
@@ -233,34 +250,38 @@ test('Perioden: Woche = letzte 7 Tage aus 8, Quartal und Jahr ab lokalem Stichta
     const now = Date.parse('2026-04-03T10:00:00Z');   // 3. April, Quartal ab 1. April
     // 100 Tage zurueck bis heute; Last 10, PV 20, Netz 1 je Tag
     const mk = v => dayRows(Array(100).fill(v), now);
-    const sums = m.periodSums({ load: mk(10), pv: mk(20), grid: mk(1) }, now, TZ);
+    const sums = m.periodSums({ load: mk(10), pv: mk(20), grid: mk(1), batIn: mk(5), batOut: mk(-5) }, now, TZ);
 
-    assert.deepEqual(sums.week, { load: 70, pv: 140, grid: 7 });
+    assert.deepEqual(sums.week, { days: 7, load: 70, pv: 140, grid: 7, batIn: 35, batOut: 35 });
     // 1., 2., 3. April = 3 Tage (Original haette den 1. April ausgelassen)
-    assert.deepEqual(sums.season, { load: 30, pv: 60, grid: 3 });
+    assert.deepEqual(sums.season, { days: 3, load: 30, pv: 60, grid: 3, batIn: 15, batOut: 15 });
     // 1. Januar bis 3. April = 31 + 28 + 31 + 3 = 93 Tage
-    assert.deepEqual(sums.year, { load: 930, pv: 1860, grid: 93 });
+    assert.equal(sums.year.days, 93);
+    assert.equal(sums.year.load, 930);
 
+    // Autarkie 20/21, Wirkungsgrad 10/21, Anlage je Tag 21 - 10 = 11 kWh
     const q = m.periodQuotes(sums);
-    assert.deepEqual(q.woche, { aut: 90, ev: 50 });
-    assert.deepEqual(q.season, { aut: 90, ev: 50 });
+    assert.deepEqual(q.woche, { aut: 95.2, ev: 47.6, systemOwn: 77, days: 7 });
+    assert.equal(q.season.systemOwn, 33);
 });
 
 
-test('Perioden: Filter wie im Original (Last/PV > 1, Netz >= 0), leere Zeitraeume', () => {
+test('Perioden: tageweise abgeglichen (Verbrauch > 1, PV und Netz vorhanden), leere Zeitraeume', () => {
     const now = Date.parse('2026-07-01T08:00:00Z');   // 1. Juli 10:00 lokal: Quartal hat 1 Tag
     const load = dayRows([5, 5, 0.5, 5], now);
+    const pv = dayRows([9, 9, 9, 9], now);
     const grid = dayRows([0, null, 0, 0], now);
-    const sums = m.periodSums({ load, pv: load, grid }, now, TZ);
-    assert.equal(sums.week.load, 15);
-    assert.equal(sums.week.grid, 0);
+    const sums = m.periodSums({ load, pv, grid }, now, TZ);
+    // Tag 2 (Netz fehlt) und Tag 3 (Verbrauch <= 1) fallen in ALLEN Reihen weg
+    assert.equal(sums.week.days, 2);
+    assert.equal(sums.week.load, 10);
+    assert.equal(sums.week.pv, 18, 'PV nur von denselben Tagen');
+    assert.equal(sums.week.batIn, null, 'ohne Akku-Reihen keine Akku-Summe');
     assert.equal(sums.season.load, 5, 'nur der 1. Juli');
-    assert.equal(sums.season.grid, 0);
 
     const none = m.periodSums({ load: [], pv: [], grid: [] }, now, TZ);
-    assert.deepEqual(none.week, { load: 0, pv: 0, grid: 0 });
-    assert.deepEqual(none.season, { load: null, pv: null, grid: null });
-    assert.deepEqual(m.periodQuotes(none).jahr, { aut: null, ev: null });
+    assert.deepEqual(none.week, { days: 0, load: null, pv: null, grid: null, batIn: null, batOut: null });
+    assert.deepEqual(m.periodQuotes(none).jahr, { aut: null, ev: null, systemOwn: null, days: 0 });
 });
 
 
@@ -279,6 +300,7 @@ test('Quoten aus Perioden landen in der Antwort', () => {
     assert.equal(out.autarkie_woche, 80);
     assert.equal(out.eigenverbrauch_season, 85);
     assert.equal(out.autarkie_jahr, 55);
-    // (7,4 - 0,3) / 7,4 = 95,9 %
-    assert.equal(out.autarkie_heute, 95.9);
+    // Autarkie heute = 8,2 / (8,2 + 0,3) = 96,5 %; Wirkungsgrad = 7,4 / (8,5 - 0,5) = 92,5 %
+    assert.equal(out.autarkie_heute, 96.5);
+    assert.equal(out.eigenverbrauch_heute, 92.5);
 });
