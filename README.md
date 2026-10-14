@@ -69,7 +69,7 @@ Auf dem Handy die Seite öffnen und „Zum Home-Bildschirm“ wählen (Android/C
 | `measurements.soc/pv/load/battery` | Momentanwerte: SOC (%), PV, Last, Akku (W, Laden positiv) | – |
 | `measurements.grid` | Netzleistung (W, Bezug positiv) – nur für SolarDaily mit `input: 'influx'` | – |
 | `measurements.forecast` | PV-Prognose (W, Werte mit zukünftigen Zeitstempeln, beliebiges Raster) – optional | – |
-| `measurements.daily.pv/load/grid/batIn/batOut` | Tageszähler in kWh (Reset 00:00) | – |
+| `measurements.daily.pv/load/grid/batIn/batOut` | Tageszähler in kWh (Reset 00:00); `batOut` darf negativ laufen | – |
 | `solardaily.*` | siehe [SolarDaily](#solardaily) | aus |
 
 Je Messgröße wird ein Measurement mit Feld `value` erwartet (Schema des ioBroker-InfluxDB-Adapters). Ein kommentiertes Beispiel mit den ioBroker-/Solar-Assistant-Namen steht in `config.example.js`.
@@ -134,6 +134,7 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `smart_range_basis` | – | Grundlage des Verbrauchs: `lastprofil`, `durchschnitt` (Ø 30 Tage / 24) oder `aktuelle_last` |
 | `daily_bat_in_kwh`, `daily_bat_out_kwh` | kWh | Akku heute geladen / entladen (beide positiv) |
 | `system_own_woche_kwh`, `system_own_season_kwh`, `system_own_jahr_kwh` | kWh | Eigenverbrauch der Anlage im Zeitraum |
+| `bilanz_plausibel_heute`, `_woche`, `_season`, `_jahr` | – | `false`: Zähler passen nicht zusammen (Eigenverbrauch wäre negativ), Eigenverbrauch und Wirkungsgrad sind dann `null`; `null`: ohne Akku-Zähler nicht prüfbar |
 
 ## Berechnungen
 
@@ -149,10 +150,12 @@ Aus den Tageszählern (`lib/energy.js`):
 
 > PV + Netz = Verbrauch + Akku netto + Eigenverbrauch der Anlage   (Akku netto = geladen − entladen)
 
-- **Eigenverbrauch der Anlage** = PV + Netz − Verbrauch − Akku netto – Wechselrichter im Leerlauf und Wandler-/Ladeverluste. Beispiel: 5 Wechselrichter × 50 W × 24 h ≈ 6 kWh plus Wandlerverluste.
+- **Eigenverbrauch der Anlage** = PV + Netz − Verbrauch − Akku netto – Wechselrichter im Leerlauf und Wandler-/Ladeverluste. Beispiel: 4 Wechselrichter × 40 W × 24 h ≈ 3,8 kWh plus Wandlerverluste.
 - **Autarkie** = PV ÷ (PV + Netz) – Anteil der Sonne an der gesamten Energiezufuhr. Unabhängig davon, ob Netzstrom die Verbraucher oder den Akku speist, und ohne Akku-Zähler berechenbar.
 - **Wirkungsgrad** = Verbrauch ÷ (PV + Netz − Akku netto) – Anteil der im Zeitraum umgesetzten Energie, der bei den Verbrauchern ankommt. Braucht die Akku-Zähler (`measurements.daily.batIn/batOut`).
-- Werte auf 0–100 % begrenzt, 0,1 % gerundet; fehlende Zähler → `null`.
+- Werte auf 0,1 % gerundet; fehlende Zähler → `null`.
+- **Plausibilität:** Ein negativer Eigenverbrauch der Anlage (gleichbedeutend: Wirkungsgrad über 100 %) ist physikalisch unmöglich und heißt, dass die Zähler nicht zusammenpassen. Dann sind Eigenverbrauch und Wirkungsgrad `null` statt gekappt, `bilanz_plausibel_*` ist `false`, und die Oberfläche zeigt „–“ mit dem Hinweis „Akku-Zähler unplausibel“. Die Autarkie hängt nicht an den Akku-Zählern und bleibt.
+- **Tageswerte für Woche/Quartal/Jahr:** je Tag das Maximum des Zählers; beim Entlade-Zähler, der wie im Original negativ läuft, der Extremwert mit dem größeren Betrag (Maximum oder Minimum).
 - Annahme: keine Netzeinspeisung (SolarDaily zählt nur Bezug). Abgeregelte PV taucht im PV-Zähler nicht auf und verfälscht nichts.
 - **Nacht/Tag/Abend:** aus dem Verbrauchszähler um 06:00 und 17:00 (jeweils erster Wert im Fenster ± 15 min). Wie im Original gibt es den Tageswert erst ab 17 Uhr; die Oberfläche zeigt vorher den bisherigen Verbrauch seit 6 Uhr.
 - **Gestern:** vorletzter Tageswert > 1 kWh der 32-Tage-Reihe (wie im Original – ist heute noch ≤ 1 kWh, ist das der Vorvortag).
@@ -222,9 +225,9 @@ Das bisherige Original (Node-RED-Tab, Widget, ioBroker-Skript) liegt unveränder
 | Berechnung je HTTP-Aufruf | Berechnung je Zyklus, Antwort aus dem Speicher | beliebig viele Clients ohne Zusatzlast |
 | Anker 22:00 abgefragt, aber nicht verwendet; Prognose-Summe doppelt abgefragt | entfällt | – |
 | `forecast_tomorrow_kwh` = `sum(value)/1000` der nächsten 24 h | Kalendertag morgen 0–24 Uhr, über die Zeit integriert | richtig bei jedem Raster; „morgen“ heißt morgen |
-| Autarkie = (Verbrauch − Netz) ÷ Verbrauch | PV ÷ (PV + Netz) | lädt Netzstrom den Akku, zählte er voll gegen den Verbrauch: Tag mit 31 kWh PV, 10,8 kWh Verbrauch, 10,1 kWh Netz (in den Akku) ergab 6,5 % statt 75 % |
+| Autarkie = (Verbrauch − Netz) ÷ Verbrauch | PV ÷ (PV + Netz) | lädt Netzstrom den Akku, zählte er voll gegen den Verbrauch: Beispiel: 20 kWh PV, 8 kWh Verbrauch, 5 kWh Netz (in den Akku) ergab 37,5 % statt 80 % |
 | „Eigenverbrauch“ = Verbrauch ÷ PV (gekappt auf 100 %) | Wirkungsgrad = Verbrauch ÷ (PV + Netz − Akku netto); API-Feld `eigenverbrauch_*` behält den Namen | keine Eigenverbrauchsquote; bei einer Inselanlage ohne Einspeisung läge die echte Quote immer bei ~100 % |
-| WR-Eigenverbrauch = PV − Verbrauch − geladen + entladen | PV + Netz − Verbrauch − Akku netto | Netzbezug fehlte, Ergebnis konnte negativ werden (−3,7 kWh statt 6,4 kWh) |
+| WR-Eigenverbrauch = PV − Verbrauch − geladen + entladen | PV + Netz − Verbrauch − Akku netto | Netzbezug fehlte, Ergebnis konnte negativ werden (Beispiel oben mit 14 kWh geladen, 1 kWh entladen: −1 kWh statt 4 kWh) |
 | Woche/Quartal/Jahr: jede Reihe für sich gefiltert | tageweise abgeglichen | PV und Verbrauch konnten aus unterschiedlichen Tagen stammen |
 | Smarte Reichweite: Akku + Prognose ≥ Ø-Tagesverbrauch → „∞ Morgen genug“, sonst (Akku + Prognose) ÷ Ø-Stundenverbrauch | Energiebilanz über die Zeit mit Lastprofil und Akku-Kapazität, Zeitpunkt „Akku leer“ | das Original zählte die Sonne von morgen, als läge sie schon im Akku: um 21 Uhr mit 2 kWh Akku und 20 kWh Prognose zeigte es „∞“, obwohl der Akku um Mitternacht leer ist; die Sonne von heute fehlte ganz |
 | Widget-Beschriftung „Nacht 22–06“, „Abend 17–22“ | „Nacht 0–6 Uhr“, „Abend ab 17 Uhr“ | entspricht der tatsächlichen Berechnung (Zähler startet um 0 Uhr, Abend läuft bis jetzt) |

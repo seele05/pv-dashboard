@@ -73,6 +73,7 @@
   const BASIS_TEXT = { lastprofil: 'Lastprofil der letzten 14 Tage', durchschnitt: 'Ø-Verbrauch 30 Tage', aktuelle_last: 'aktuelle Last' };
   const DIR_TEXT = { charging: '↑ lädt', discharging: '↓ entlädt', idle: '– Ruhe' };
   const PERIODS = [['heute', 'Heute'], ['woche', '7 Tage'], ['season', 'Quartal'], ['jahr', 'Jahr']];
+  const IMPLAUSIBLE = 'Akku-Zähler unplausibel';
 
   /* ---------- Rendern ---------- */
   function render(d) {
@@ -158,19 +159,21 @@
 
     // Quoten
     const quotes = $('quotes');
-    const cell = (v, cls) => '<div class="qv" role="cell"><b>' + fmtPct(v) + '</b><div class="track"><span class="fill' + cls + '" data-w="' + (isNum(v) ? v : 0) + '"></span></div></div>';
+    const cell = (v, cls, bad) => '<div class="qv' + (bad ? ' bad' : '') + '" role="cell"' + (bad ? ' title="' + IMPLAUSIBLE + '"' : '') + '><b>' + fmtPct(v) + '</b><div class="track"><span class="fill' + cls + '" data-w="' + (isNum(v) ? v : 0) + '"></span></div></div>';
     const html = '<div class="qh" role="columnheader">Zeitraum</div>' +
       '<div class="qh" role="columnheader"><i class="sw sw-pv" aria-hidden="true"></i>Autarkie</div>' +
       '<div class="qh" role="columnheader"><i class="sw sw-load" aria-hidden="true"></i>Wirkungsgrad</div>' +
       PERIODS.map(([key, label]) => '<div class="qp" role="rowheader">' + label + '</div>' +
-        cell(d['autarkie_' + key], '') + cell(d['eigenverbrauch_' + key], ' ev')).join('');
+        cell(d['autarkie_' + key], '') + cell(d['eigenverbrauch_' + key], ' ev', d['bilanz_plausibel_' + key] === false)).join('');
     if (quotes._html !== html) {
       quotes.innerHTML = html;
       quotes._html = html;
       quotes.querySelectorAll('.fill[data-w]').forEach(f => { f.style.width = f.dataset.w + '%'; });
     }
-    const own = [['heute', d.wr_eigenverbrauch], ['7 Tage', d.system_own_woche_kwh], ['Quartal', d.system_own_season_kwh], ['Jahr', d.system_own_jahr_kwh]]
-      .filter(([, v]) => isNum(v)).map(([k, v]) => k + ' ' + NF1.format(v) + ' kWh');
+    // unplausible Bilanz (Eigenverbrauch < 0): kein Wert, sondern Hinweis statt einer gekappten Zahl
+    const own = [['heute', d.wr_eigenverbrauch, 'heute'], ['7 Tage', d.system_own_woche_kwh, 'woche'], ['Quartal', d.system_own_season_kwh, 'season'], ['Jahr', d.system_own_jahr_kwh, 'jahr']]
+      .map(([k, v, key]) => d['bilanz_plausibel_' + key] === false ? k + ' – (' + IMPLAUSIBLE + ')' : isNum(v) ? k + ' ' + NF1.format(v) + ' kWh' : null)
+      .filter(Boolean);
     setText('sysOwnLine', own.length ? 'Eigenverbrauch der Anlage: ' + own.join(' · ') : '');
   }
 
@@ -233,7 +236,7 @@
     if ($('balOutLegend')._html !== lo) { $('balOutLegend').innerHTML = lo; $('balOutLegend')._html = lo; }
 
     setText('balNote', hasBat
-      ? 'Akku geladen ' + fmtKwh(bIn) + ' · entladen ' + fmtKwh(bOut) + (own !== null && own < 0 ? ' · Bilanz geht nicht auf (Zähler prüfen)' : '')
+      ? 'Akku geladen ' + fmtKwh(bIn) + ' · entladen ' + fmtKwh(bOut) + (d.bilanz_plausibel_heute === false ? ' · ' + IMPLAUSIBLE + ': Bilanz geht nicht auf' : '')
       : 'Ohne Akku-Zähler lassen sich Akku und Anlagen-Eigenverbrauch nicht trennen.');
   }
 
