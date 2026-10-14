@@ -46,7 +46,7 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh']]);
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr']]);
 });
 
 
@@ -225,8 +225,46 @@ test('Energiebilanz: Tag mit Netzladung des Akkus geht auf', () => {
     assert.equal(o.autarkie, 50);
     assert.equal(o.systemOwn, null);
     assert.equal(o.wirkungsgrad, null);
+    assert.equal(o.plausibel, null);
     assert.deepEqual(balance({ pv: 0, grid: 0, load: 0, batIn: 0, batOut: 0 }).autarkie, null);
     assert.equal(balance({ pv: null, grid: 1 }).autarkie, null);
+    assert.equal(b.plausibel, true);
+});
+
+
+test('Energiebilanz: unplausible Zaehler ergeben null und Hinweis statt gekappter Werte', () => {
+    const { balance } = require('../lib/energy');
+    // Entladung zu klein erfasst (z. B. Tagesmaximum eines negativ laufenden Zaehlers ~ 0):
+    // PV 20 + Netz 2 - Verbrauch 10 - Akku netto (15 - 0) = -3 -> physikalisch unmoeglich
+    const b = balance({ pv: 20, grid: 2, load: 10, batIn: 15, batOut: 0 });
+    assert.equal(b.plausibel, false);
+    assert.equal(b.systemOwn, null);
+    assert.equal(b.wirkungsgrad, null);      // frueher auf 100 % gekappt
+    assert.equal(b.autarkie, 90.9);          // haengt nicht an den Akku-Zaehlern
+    assert.equal(b.batNet, 15);
+
+    // Grenzfall: Eigenverbrauch genau 0 ist plausibel (Wirkungsgrad 100 %)
+    const z = balance({ pv: 10, grid: 0, load: 8, batIn: 2, batOut: 0 });
+    assert.equal(z.plausibel, true);
+    assert.equal(z.systemOwn, 0);
+    assert.equal(z.wirkungsgrad, 100);
+
+    const out = m.computePayload(raw({ daily_bat_in: 15, daily_bat_out: 0 }), m.periodQuotes({
+        week: { days: 7, pv: 140, grid: 14, load: 70, batIn: 105, batOut: 0 },
+        season: { days: 9, pv: 180, grid: 18, load: 90, batIn: 72, batOut: 0 },
+        year: { days: 9, pv: 180, grid: 18, load: 90, batIn: 60, batOut: 54 },
+    }), OPTS);
+    assert.equal(out.bilanz_plausibel_heute, false);
+    assert.equal(out.wr_eigenverbrauch, null);
+    assert.equal(out.eigenverbrauch_heute, null);
+    assert.equal(out.bilanz_plausibel_woche, false);
+    assert.equal(out.system_own_woche_kwh, null);
+    assert.equal(out.eigenverbrauch_woche, null);
+    assert.equal(out.bilanz_plausibel_season, true);   // 198 - 90 - 72 = 36
+    assert.equal(out.system_own_season_kwh, 36);
+    assert.equal(out.bilanz_plausibel_jahr, true);     // 198 - 90 - 6 = 102
+    assert.equal(out.system_own_jahr_kwh, 102);
+    assert.equal(m.computePayload(raw(), null, OPTS).bilanz_plausibel_woche, null);
 });
 
 
@@ -261,7 +299,7 @@ test('Perioden: Woche = letzte 7 Tage aus 8, Quartal und Jahr ab lokalem Stichta
 
     // Autarkie 20/21, Wirkungsgrad 10/21, Anlage je Tag 21 - 10 = 11 kWh
     const q = m.periodQuotes(sums);
-    assert.deepEqual(q.woche, { aut: 95.2, ev: 47.6, systemOwn: 77, days: 7 });
+    assert.deepEqual(q.woche, { aut: 95.2, ev: 47.6, systemOwn: 77, plausibel: true, days: 7 });
     assert.equal(q.season.systemOwn, 33);
 });
 
@@ -281,7 +319,7 @@ test('Perioden: tageweise abgeglichen (Verbrauch > 1, PV und Netz vorhanden), le
 
     const none = m.periodSums({ load: [], pv: [], grid: [] }, now, TZ);
     assert.deepEqual(none.week, { days: 0, load: null, pv: null, grid: null, batIn: null, batOut: null });
-    assert.deepEqual(m.periodQuotes(none).jahr, { aut: null, ev: null, systemOwn: null, days: 0 });
+    assert.deepEqual(m.periodQuotes(none).jahr, { aut: null, ev: null, systemOwn: null, plausibel: null, days: 0 });
 });
 
 
