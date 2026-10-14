@@ -1,6 +1,6 @@
 {
   "name": "pv-dashboard",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Übersicht für PV-/Akku-Anlagen: PWA, JSON-API und Tages-/Gesamtzähler (SolarDaily), liest aus InfluxDB 1.x",
   "main": "main.js",
   "license": "MIT",

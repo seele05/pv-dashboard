@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const http = require('http');
 
 const { InfluxClient, parseResults, quoteIdent, escapeMeasurement } = require('../lib/influx');
-const { InfluxSource } = require('../lib/source');
+const { InfluxSource, dailyExtreme } = require('../lib/source');
 const { startInfluxInput, parsePayload } = require('../lib/inputs');
 const { DEFAULTS, deepMerge, validate } = require('../lib/config');
 
@@ -35,6 +35,7 @@ async function fakeInflux(answer) {
                 const a = answer(q);
                 if (a && a.error) return { statement_id: i, error: a.error };
                 if (!a) return { statement_id: i };
+                if (a.columns) return { statement_id: i, series: [{ name: 'x', columns: a.columns, values: a.values }] };
                 return { statement_id: i, series: [{ name: 'x', columns: ['time', 'v'], values: a }] };
             });
             res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -291,6 +292,46 @@ test('Prognose-Zyklus: Rohwerte gestern bis uebermorgen (lokal), Ist als 15-min-
     } finally {
         await fake.close();
     }
+});
+
+
+test('Aggregate: negativ laufender Entlade-Zaehler zaehlt mit dem Tagesminimum', async () => {
+    const now = Date.parse('2026-05-10T10:00:00Z');
+    const fake = await fakeInflux(q => {
+        if (q.includes('GROUP BY time(1h)')) return [[now - 3_600_000, 500]];
+        const days = n => Array.from({ length: 367 }, (_, i) => [now - (366 - i) * 86400_000, n]);
+        if (q.includes('"d.out"')) {
+            // Tagesmaximum 0 (Zaehlerstand nach Mitternacht), Tagesminimum -6 (Tagesende)
+            return { columns: ['time', 'v', 'lo'], values: days(0).map(([t]) => [t, 0, -6]) };
+        }
+        return days(q.includes('"d.load"') ? 10 : q.includes('"d.pv"') ? 20 : q.includes('"d.in"') ? 8 : 2);
+    });
+    try {
+        const cfg = cfgWith(fake.url);
+        const src = new InfluxSource(cfg, new InfluxClient(cfg.influx));
+        const { quoten, errors } = await src.aggregates(now);
+        const q = new URLSearchParams(fake.requests[0].body).get('q');
+        assert.match(q, /SELECT max\("value"\) AS "v", min\("value"\) AS "lo" FROM "testdb"\."autogen"\."d\.out"/);
+        assert.deepEqual(errors, []);
+        // je Tag: PV 20 + Netz 2 - Verbrauch 10 - Akku netto (8 - 6) = 10 kWh Anlage, Wirkungsgrad 10 / 20
+        // (mit dem Tagesmaximum 0 waeren es 4 kWh und 55,6 %)
+        assert.equal(quoten.woche.systemOwn, 70);
+        assert.equal(quoten.woche.ev, 50);
+        assert.equal(quoten.woche.plausibel, true);
+    } finally {
+        await fake.close();
+    }
+});
+
+
+test('dailyExtreme: Wert mit dem groesseren Betrag, fehlende Werte', () => {
+    assert.deepEqual(dailyExtreme({ time: 1, v: 0, lo: -6 }), { time: 1, v: -6 });
+    assert.deepEqual(dailyExtreme({ time: 1, v: 5, lo: 0 }), { time: 1, v: 5 });
+    assert.deepEqual(dailyExtreme({ time: 1, v: null, lo: -2 }), { time: 1, v: -2 });
+    assert.deepEqual(dailyExtreme({ time: 1, v: 3 }), { time: 1, v: 3 });
+    assert.deepEqual(dailyExtreme({ time: 1, v: null, lo: null }), { time: 1, v: null });
+    const [r] = parseResults({ results: [{ statement_id: 0, series: [{ columns: ['time', 'v', 'lo'], values: [[7, 0, -1.5]] }] }] }, 1);
+    assert.deepEqual(r.rows, [{ time: 7, v: 0, lo: -1.5 }]);
 });
 
 

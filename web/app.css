@@ -197,6 +197,7 @@ body {
 .quotes .qp, .quotes .qv { padding: 8px 0; border-bottom: 1px solid var(--border); }
 .quotes .qp { font-size: 0.84rem; color: var(--ink-2); align-self: center; }
 .quotes .qv b { display: block; font-size: 0.95rem; font-weight: 600; text-align: right; }
+.quotes .qv.bad b { color: var(--crit); }
 .quotes .track { height: 5px; margin-top: 5px; }
 .quotes .fill { background: var(--pv); }
 .quotes .fill.ev { background: var(--load); }
