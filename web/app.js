@@ -20,7 +20,7 @@
   /* ---------- Formatierung ---------- */
   function fmtW(w) {
     if (!isNum(w)) return '–';
-    return Math.abs(w) >= 1000 ? NF2.format(w / 1000) + ' kW' : NF0.format(Math.round(w)) + ' W';
+    return Math.abs(w) >= 1000 ? NF2.format(w / 1000) + '\u00a0kW' : NF0.format(Math.round(w)) + '\u00a0W';
   }
   const fmtKwh = v => (isNum(v) ? NF1.format(v) + ' kWh' : '–');
   const fmtPct = v => (isNum(v) ? NF1.format(v) + ' %' : '–');
@@ -77,6 +77,8 @@
 
   /* ---------- Rendern ---------- */
   function render(d) {
+    renderFlow(d);
+
     // Energiequelle + Ring
     const src = sourceInfo(d);
     const icon = $('srcIcon');
@@ -175,6 +177,74 @@
       .map(([k, v, key]) => d['bilanz_plausibel_' + key] === false ? k + ' – (' + IMPLAUSIBLE + ')' : isNum(v) ? k + ' ' + NF1.format(v) + ' kWh' : null)
       .filter(Boolean);
     setText('sysOwnLine', own.length ? 'Eigenverbrauch der Anlage: ' + own.join(' · ') : '');
+  }
+
+  /* ---------- Energiefluss ---------- */
+  // Leitungen sind gezeichnet: PV -> WR, Netz -> WR, WR -> Haus, WR -> Akku. Positive Leistung
+  // fliesst in Zeichenrichtung, negative (Einspeisung, Entladen) rueckwaerts.
+  const FLOW_MIN_W = 10;
+
+  function setFlow(id, w, minW) {
+    const el = $(id);
+    const on = isNum(w) && Math.abs(w) >= minW;
+    el.classList.toggle('off', !on);
+    el.classList.toggle('rev', on && w < 0);
+    if (!on) return false;
+    // Tempo und Strichstaerke wachsen mit der Leistung (Wurzel: kleine Fluesse bleiben sichtbar)
+    const ref = Math.max(meta.display.maxPvW, meta.display.maxLoadW, 1);
+    const k = Math.sqrt(Math.min(1, Math.abs(w) / ref));
+    const dur = (3 - 2.5 * k).toFixed(1) + 's';
+    if (el.style.animationDuration !== dur) el.style.animationDuration = dur;
+    el.style.strokeWidth = (3.5 + 3.5 * k).toFixed(1);
+    return true;
+  }
+
+  function setVal(id, text, na) {
+    setText(id, text);
+    $(id).classList.toggle('na', !!na);
+  }
+
+  function renderFlow(d) {
+    const pv = d.pv_w, load = d.load_w, bat = d.bat_w, grid = d.grid_w;
+
+    $('nPv').classList.toggle('on', setFlow('flPv', pv, FLOW_MIN_W));
+    setVal('vPv', fmtW(pv));
+
+    $('nLoad').classList.toggle('on', setFlow('flLoad', load, FLOW_MIN_W));
+    setVal('vLoad', fmtW(load));
+
+    const gridOn = setFlow('flGrid', grid, FLOW_MIN_W);
+    $('nGrid').classList.toggle('on', gridOn);
+    setText('lGrid', !isNum(grid) ? 'Netz' : !gridOn ? 'Netz' : grid > 0 ? 'Netzbezug' : 'Einspeisung');
+    setVal('vGrid', isNum(grid) ? fmtW(gridOn ? Math.abs(grid) : 0) : '–', !isNum(grid));
+
+    // Akku: Schwelle wie bat_direction (± 50 W = Ruhe)
+    const batOn = setFlow('flBat', bat, 50);
+    $('nBat').classList.toggle('on', batOn);
+    const soc = isNum(d.soc) ? Math.min(100, Math.max(0, d.soc)) : null;
+    setText('lBat', 'Akku ' + (batOn ? (bat > 0 ? 'lädt' : 'entlädt') : 'in Ruhe') + (soc !== null ? ' · ' + NF0.format(soc) + ' %' : ''));
+    setVal('vBat', isNum(bat) ? fmtW(Math.abs(bat)) : '–');
+    const lvl = $('batLevel');
+    const h = soc !== null ? 12 * soc / 100 : 0;
+    lvl.setAttribute('height', h.toFixed(2));
+    lvl.setAttribute('y', (19 - h).toFixed(2));
+
+    // Rest = Eigenverbrauch der Anlage (Momentaufnahme; Werte nicht zeitgleich gemessen)
+    let note = '';
+    if (!isNum(grid)) {
+      note = 'Netzleistung nicht konfiguriert (measurements.grid oder SolarDaily mit MQTT).';
+    } else if (isNum(pv) && isNum(load) && isNum(bat)) {
+      const own = pv + grid - load - bat;
+      if (own >= 0) note = 'Wechselrichter und Wandler brauchen gerade ≈\u00a0' + fmtW(own) + '.';
+    }
+    setText('flowNote', note);
+
+    const parts = ['Solar ' + fmtW(pv)];
+    if (isNum(grid)) parts.push(gridOn ? (grid < 0 ? 'Einspeisung ' : 'Netzbezug ') + fmtW(Math.abs(grid)) : 'Netz 0 W');
+    parts.push('Verbrauch ' + fmtW(load));
+    if (isNum(bat)) parts.push('Akku ' + (batOn ? (bat > 0 ? 'lädt ' : 'entlädt ') + fmtW(Math.abs(bat)) : 'in Ruhe'));
+    if (soc !== null) parts.push('Ladezustand ' + NF0.format(soc) + ' %');
+    setText('flowTitle', 'Energiefluss: ' + parts.join(', '));
   }
 
   /* ---------- Energiebilanz heute ---------- */

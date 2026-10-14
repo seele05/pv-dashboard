@@ -65,7 +65,7 @@ module.exports = {
         pv: 'pv_power',                 // W
         load: 'load_power',             // W
         battery: 'battery_power',       // W, Laden positiv
-        grid: 'grid_power',             // W, Bezug positiv (nur fuer SolarDaily mit input 'influx')
+        grid: 'grid_power',             // W, Bezug positiv – Energiefluss und SolarDaily mit input 'influx'
         forecast: 'pv_forecast_power',  // W, Prognosewerte mit zukuenftigen Zeitstempeln (beliebiges Raster)
         daily: {                        // kWh, Tageszaehler mit Reset um 00:00
             pv: 'daily_pv_production',

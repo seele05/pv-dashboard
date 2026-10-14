@@ -242,6 +242,54 @@ body {
 .table-wrap td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--border); }
 .table-wrap th:first-child, .table-wrap td:first-child { text-align: left; }
 
+/* ---------- Energiefluss ---------- */
+@media (min-width: 720px) { .card.flow { grid-column: 1 / -1; } }
+/* breit: Grafik links ueber drei Zeilen, rechts Energiequelle, Reichweite, Leistung untereinander */
+@media (min-width: 1120px) {
+  .card.flow { grid-column: span 2; grid-row: span 3; display: flex; flex-direction: column; }
+  .card.flow .flow-svg { max-width: 660px; max-height: 470px; margin: auto; }
+}
+.flow-svg { display: block; width: 100%; max-width: 560px; max-height: 400px; margin: 0 auto; overflow: visible; }
+.flow-svg .line-track { fill: none; stroke: var(--track); stroke-width: 6; stroke-linecap: round; }
+.flow-svg .line-flow {
+  fill: none; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 0 18;
+  animation: flow-dots 1.6s linear infinite; transition: opacity .4s;
+}
+.flow-svg .line-flow.rev { animation-direction: reverse; }
+.flow-svg .line-flow.off { opacity: 0; }
+.flow-svg .f-pv { stroke: var(--pv); }
+.flow-svg .f-grid { stroke: var(--grid); }
+.flow-svg .f-load { stroke: var(--load); }
+.flow-svg .f-bat { stroke: var(--bat); }
+@keyframes flow-dots { to { stroke-dashoffset: -18; } }
+
+.flow-svg .hub circle { fill: var(--card-2); stroke: var(--ink-3); stroke-width: 1.5; }
+.flow-svg .hub path { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; }
+
+.flow-svg .node { --c: var(--ink-3); }
+.flow-svg .n-pv { --c: var(--pv); }
+.flow-svg .n-grid { --c: var(--grid); }
+.flow-svg .n-load { --c: var(--load); }
+.flow-svg .n-bat { --c: var(--bat); }
+.flow-svg .disc { fill: var(--card-2); stroke: var(--border); stroke-width: 2; transition: fill .4s, stroke .4s; }
+.flow-svg .ico { fill: none; stroke: var(--ink-3); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: stroke .4s; }
+.flow-svg .ico .cap { fill: var(--ink-3); stroke: none; }
+.flow-svg .ico .level { fill: var(--ink-3); stroke: none; }
+.flow-svg .node.on .disc { fill: color-mix(in srgb, var(--c) 14%, var(--card)); stroke: var(--c); }
+.flow-svg .node.on .ico { stroke: var(--c); }
+.flow-svg .node.on .ico .cap, .flow-svg .node.on .ico .level { fill: var(--c); }
+.flow-svg .pulse { fill: none; stroke: var(--c); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.flow-svg .node.on .pulse { animation: node-pulse 2.6s ease-out infinite; }
+@keyframes node-pulse { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(1.35); } }
+.flow-svg .n-pv.on .rays { transform-box: fill-box; transform-origin: center; animation: sun-turn 24s linear infinite; }
+@keyframes sun-turn { to { transform: rotate(360deg); } }
+
+.flow-svg text { fill: var(--ink); }
+.flow-svg .lbl { font-size: 16px; fill: var(--ink-2); }
+.flow-svg .val { font-size: 21px; font-weight: 650; }
+.flow-svg .mid { text-anchor: middle; }
+.flow-svg .na { fill: var(--ink-3); font-weight: 400; }
+
 .foot { max-width: 1240px; margin: 16px auto 0; font-size: 0.72rem; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {

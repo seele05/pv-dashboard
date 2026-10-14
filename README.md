@@ -67,7 +67,7 @@ Auf dem Handy die Seite öffnen und „Zum Home-Bildschirm“ wählen (Android/C
 | `influx.username`, `password` | Basic-Auth (leer = ohne) | – |
 | `influx.token` | statt Benutzer/Passwort: `Authorization: Token …` (2.x-Kompatibilitäts-API) | – |
 | `measurements.soc/pv/load/battery` | Momentanwerte: SOC (%), PV, Last, Akku (W, Laden positiv) | – |
-| `measurements.grid` | Netzleistung (W, Bezug positiv) – nur für SolarDaily mit `input: 'influx'` | – |
+| `measurements.grid` | Netzleistung (W, Bezug positiv, Einspeisung negativ) – für den Energiefluss und SolarDaily mit `input: 'influx'`; ohne Angabe nimmt der Energiefluss den MQTT-Wert von SolarDaily | – |
 | `measurements.forecast` | PV-Prognose (W, Werte mit zukünftigen Zeitstempeln, beliebiges Raster) – optional | – |
 | `measurements.daily.pv/load/grid/batIn/batOut` | Tageszähler in kWh (Reset 00:00); `batOut` darf negativ laufen | – |
 | `solardaily.*` | siehe [SolarDaily](#solardaily) | aus |
@@ -78,6 +78,7 @@ Je Messgröße wird ein Measurement mit Feld `value` erwartet (Schema des ioBrok
 
 Eine Seite, die sich an die Bildschirmbreite anpasst: einspaltig auf dem Handy, zwei Spalten auf dem Tablet, drei auf dem Desktop.
 
+- **Energiefluss jetzt** – animierte Grafik: PV oben, Netz links, Haus rechts, Akku unten, Wechselrichter in der Mitte. Punkte laufen in Flussrichtung, Tempo und Strichstärke wachsen mit der Leistung; Einspeisung und Entladen laufen rückwärts. Darunter der momentane Eigenverbrauch von Wechselrichter und Wandlern (PV + Netz − Verbrauch − Akku). Bei „Bewegung reduzieren“ steht die Animation.
 - **Energiequelle & Akku** – Solar / Solar + Akku / Akku / Netz (Logik wie im bisherigen Widget), Ladezustand mit Reserve-Markierung, nutzbare kWh, Lade-/Entladerichtung
 - **Restreichweite** – „smarte“ Reichweite als Energiebilanz bis Ende morgen (Akku + PV-Prognose − erwarteter Verbrauch) mit Zeitpunkt „Akku leer“ bzw. tiefstem Akkustand und Status *Reicht bis Ende morgen / Ausreichend / Niedrig / Kritisch*, dazu die reine Akku-Reichweite bei aktueller Last
 - **Leistung aktuell** – PV, Verbrauch, Akku, Prognose als Balken, Überschuss/Defizit
@@ -135,6 +136,7 @@ Statusfarben erscheinen immer zusammen mit Text oder Symbol. Die Datenfarben sta
 | `daily_bat_in_kwh`, `daily_bat_out_kwh` | kWh | Akku heute geladen / entladen (beide positiv) |
 | `system_own_woche_kwh`, `system_own_season_kwh`, `system_own_jahr_kwh` | kWh | Eigenverbrauch der Anlage im Zeitraum |
 | `bilanz_plausibel_heute`, `_woche`, `_season`, `_jahr` | – | `false`: Zähler passen nicht zusammen (Eigenverbrauch wäre negativ), Eigenverbrauch und Wirkungsgrad sind dann `null`; `null`: ohne Akku-Zähler nicht prüfbar |
+| `grid_w` | W | Netzleistung jetzt (Bezug positiv, Einspeisung negativ); aus `measurements.grid` oder dem MQTT-Eingang von SolarDaily (höchstens `maxGapMinutes` alt), sonst `null` |
 
 ## Berechnungen
 

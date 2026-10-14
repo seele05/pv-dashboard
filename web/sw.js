@@ -6,7 +6,7 @@
  * aktualisiert. /api/* wird nie gecacht (die Seite merkt sich den letzten Stand selbst).
  */
 
-const CACHE = 'pv-shell-v5';
+const CACHE = 'pv-shell-v6';
 const SHELL = [
   '/',
   '/app.css',

@@ -32,6 +32,73 @@
   <div class="notice" id="notice" hidden></div>
 
   <main class="grid">
+    <!-- Energiefluss: PV oben, Netz links, Haus rechts, Akku unten, Wechselrichter in der Mitte -->
+    <section class="card flow" aria-labelledby="h-flow">
+      <h2 id="h-flow">Energiefluss jetzt</h2>
+      <svg class="flow-svg num" viewBox="0 0 480 330" role="img" aria-labelledby="flowTitle">
+        <title id="flowTitle">Energiefluss</title>
+        <g class="flow-lines">
+          <path class="line-track" d="M240 80V149"></path>
+          <path class="line-track" d="M92 165H224"></path>
+          <path class="line-track" d="M256 165H388"></path>
+          <path class="line-track" d="M240 181V250"></path>
+          <path class="line-flow f-pv off" id="flPv" d="M240 80V149"></path>
+          <path class="line-flow f-grid off" id="flGrid" d="M92 165H224"></path>
+          <path class="line-flow f-load off" id="flLoad" d="M256 165H388"></path>
+          <path class="line-flow f-bat off" id="flBat" d="M240 181V250"></path>
+        </g>
+
+        <g class="hub">
+          <circle cx="240" cy="165" r="16"></circle>
+          <path d="M230 165q2.5-6 5 0t5 0t5 0t5 0"></path>
+        </g>
+
+        <g class="node n-pv" id="nPv" transform="translate(240 48)">
+          <circle class="pulse" r="32"></circle>
+          <circle class="disc" r="32"></circle>
+          <g class="ico" transform="translate(-15 -15) scale(1.25)">
+            <circle cx="12" cy="12" r="4.5"></circle>
+            <path class="rays" d="M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"></path>
+          </g>
+        </g>
+        <text class="lbl" x="284" y="40">Solar</text>
+        <text class="val" id="vPv" x="284" y="65">–</text>
+
+        <g class="node n-grid" id="nGrid" transform="translate(60 165)">
+          <circle class="pulse" r="32"></circle>
+          <circle class="disc" r="32"></circle>
+          <g class="ico" transform="translate(-15 -15) scale(1.25)">
+            <path d="M12 2 7 22M12 2l5 20M4 6.5h16M6 11.5h12M8.4 15.5l7 6.5M15.6 15.5l-7 6.5"></path>
+          </g>
+        </g>
+        <text class="lbl mid" id="lGrid" x="60" y="224">Netz</text>
+        <text class="val mid" id="vGrid" x="60" y="249">–</text>
+
+        <g class="node n-load" id="nLoad" transform="translate(420 165)">
+          <circle class="pulse" r="32"></circle>
+          <circle class="disc" r="32"></circle>
+          <g class="ico" transform="translate(-15 -15) scale(1.25)">
+            <path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h13V9.5M10 20v-5h4v5"></path>
+          </g>
+        </g>
+        <text class="lbl mid" x="420" y="224">Verbrauch</text>
+        <text class="val mid" id="vLoad" x="420" y="249">–</text>
+
+        <g class="node n-bat" id="nBat" transform="translate(240 282)">
+          <circle class="pulse" r="32"></circle>
+          <circle class="disc" r="32"></circle>
+          <g class="ico" transform="translate(-15 -15) scale(1.25)">
+            <rect x="6.5" y="5" width="11" height="16" rx="2"></rect>
+            <rect class="cap" x="9.5" y="2.5" width="5" height="2.5" rx="0.8"></rect>
+            <rect class="level" id="batLevel" x="8.5" y="19" width="7" height="0" rx="0.8"></rect>
+          </g>
+        </g>
+        <text class="lbl" id="lBat" x="284" y="274">Akku</text>
+        <text class="val" id="vBat" x="284" y="299">–</text>
+      </svg>
+      <div class="sub-line muted num" id="flowNote"></div>
+    </section>
+
     <!-- Energiequelle + Akku -->
     <section class="card source" aria-labelledby="h-source">
       <h2 id="h-source">Energiequelle &amp; Akku</h2>

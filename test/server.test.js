@@ -30,7 +30,7 @@ test('Mock-Modus: /api/pv liefert alle Felder der Beispielantwort mit passenden 
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('access-control-allow-origin'), '*');
         const body = await res.json();
-        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr']];
+        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w']];
         assert.deepEqual(Object.keys(body), expected);
         for (const [k, v] of Object.entries(sample)) {
             if (v === null || body[k] === null) continue;

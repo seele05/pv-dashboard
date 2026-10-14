@@ -81,6 +81,7 @@ test('Live-Zyklus: eine Mehrfach-Query, lokale Ankerfenster, tz()-Tagesbuckets, 
         if (q.includes('"pv"')) return [[now, 0]];
         if (q.includes('"load"')) return [[now, 2000]];
         if (q.includes('"bat"')) return [[now, -1900]];
+        if (q.includes('"grid"')) return [[now, 120.4]];
         if (q.includes('last("value")') && q.includes('"fc"')) return null;     // keine aktuelle Prognose
         if (q.includes('GROUP BY time(1d)')) return Array.from({ length: 33 }, (_, i) => [now - (32 - i) * 86400_000, i === 32 ? 9 : 10]);
         if (q.includes('first("value")') && q.includes('04:45:00')) return [[now, 3.2]];
@@ -117,6 +118,8 @@ test('Live-Zyklus: eine Mehrfach-Query, lokale Ankerfenster, tz()-Tagesbuckets, 
         assert.equal(d.soc, 64);
         assert.equal(d.load_w, 2000);
         assert.equal(d.bat_w, -1900);
+        assert.equal(d.grid_w, 120.4);
+        assert.match(q, /SELECT last\("value"\) AS "v" FROM "testdb"\."autogen"\."grid"/);
         assert.equal(d.forecast_w, null);
         assert.ok(!q.includes('sum("value")'), 'Prognosesumme nicht mehr im Live-Zyklus');
         assert.equal(d.daily_load_kwh, 9);

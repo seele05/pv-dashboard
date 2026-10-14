@@ -134,6 +134,18 @@ test('Netz: nur Bezug zaehlt, Einspeisung ignoriert, Zeitstempel laeuft weiter',
 });
 
 
+test('liveWatts: letzter Momentanwert, nur solange er frisch ist', () => {
+    const s = sd({ batteryChargePositive: false });
+    assert.equal(s.liveWatts('grid', at(10)), null);
+    s.sample('grid', -300, at(10));
+    s.sample('battery', 800, at(10));
+    assert.equal(s.liveWatts('grid', at(10, 4)), -300);     // Einspeisung bleibt negativ
+    assert.equal(s.liveWatts('battery', at(10, 1)), -800);  // Vorzeichen bereits angewandt
+    assert.equal(s.liveWatts('grid', at(10, 6)), null);     // aelter als 5 min
+    assert.equal(s.liveWatts('unbekannt', at(10)), null);
+});
+
+
 test('Ungueltige Werte werden ignoriert', () => {
     const s = sd();
     assert.equal(s.sample('pv', NaN, at(12)), 0);

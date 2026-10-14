@@ -46,7 +46,7 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr']]);
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w']]);
 });
 
 
@@ -281,6 +281,8 @@ test('WR-Eigenverbrauch, Akku-Richtung, Rundung', () => {
     assert.equal(m.computePayload(raw({ bat_w: -50 }), null, OPTS).bat_direction, 'idle');
     assert.equal(m.computePayload(raw({ forecast_tomorrow_kwh: 12.46 }), null, OPTS).forecast_tomorrow_kwh, 12.5);
     assert.equal(out.ts, '2026-06-15T10:00:00.000Z');
+    assert.equal(out.grid_w, null);
+    assert.equal(m.computePayload(raw({ grid_w: -120.6 }), null, OPTS).grid_w, -121);
 });
 
 
