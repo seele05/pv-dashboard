@@ -172,11 +172,14 @@
       quotes._html = html;
       quotes.querySelectorAll('.fill[data-w]').forEach(f => { f.style.width = f.dataset.w + '%'; });
     }
-    // unplausible Bilanz (Eigenverbrauch < 0): kein Wert, sondern Hinweis statt einer gekappten Zahl
-    const own = [['heute', d.wr_eigenverbrauch, 'heute'], ['7 Tage', d.system_own_woche_kwh, 'woche'], ['Quartal', d.system_own_season_kwh, 'season'], ['Jahr', d.system_own_jahr_kwh, 'jahr']]
-      .map(([k, v, key]) => d['bilanz_plausibel_' + key] === false ? k + ' – (' + IMPLAUSIBLE + ')' : isNum(v) ? k + ' ' + NF1.format(v) + ' kWh' : null)
-      .filter(Boolean);
-    setText('sysOwnLine', own.length ? 'Eigenverbrauch der Anlage: ' + own.join(' · ') : '');
+    // Anlagenverluste (WR-Leerlauf, Wandlung, Akku): heute bisher, Zeitraeume als Mittel pro Tag.
+    // Unplausible Bilanz (Verluste < 0): kein Wert, sondern Hinweis statt einer gekappten Zahl
+    const loss = (label, v, key) => d['bilanz_plausibel_' + key] === false ? label + ' – (' + IMPLAUSIBLE + ')'
+      : isNum(v) ? label + ' ' + NF1.format(v) + '\u00a0kWh' : null;
+    const today = loss('heute bisher', d.wr_eigenverbrauch, 'heute');
+    const avg = [loss('7 Tage', d.system_own_woche_avg_kwh, 'woche'), loss('Quartal', d.system_own_season_avg_kwh, 'season'), loss('Jahr', d.system_own_jahr_avg_kwh, 'jahr')].filter(Boolean);
+    setText('sysOwnLine', today || avg.length
+      ? 'Anlagenverluste: ' + [today, avg.length ? 'Ø pro Tag: ' + avg.join(' · ') : null].filter(Boolean).join(' · ') : '');
   }
 
   /* ---------- Energiefluss ---------- */
@@ -229,15 +232,9 @@
     lvl.setAttribute('height', h.toFixed(2));
     lvl.setAttribute('y', (19 - h).toFixed(2));
 
-    // Rest = Eigenverbrauch der Anlage (Momentaufnahme; Werte nicht zeitgleich gemessen)
-    let note = '';
-    if (!isNum(grid)) {
-      note = 'Netzleistung nicht konfiguriert (measurements.grid oder SolarDaily mit MQTT).';
-    } else if (isNum(pv) && isNum(load) && isNum(bat)) {
-      const own = pv + grid - load - bat;
-      if (own >= 0) note = 'Wechselrichter und Wandler brauchen gerade ≈\u00a0' + fmtW(own) + '.';
-    }
-    setText('flowNote', note);
+    // Keine Differenz "PV + Netz - Verbrauch - Akku" als Momentanwert: die Werte stammen aus
+    // verschiedenen Messreihen und sind nicht zeitgleich – die Verluste zeigt die Tagesbilanz
+    setText('flowNote', isNum(grid) ? '' : 'Netzleistung nicht konfiguriert (measurements.grid oder SolarDaily mit MQTT).');
 
     const parts = ['Solar ' + fmtW(pv)];
     if (isNum(grid)) parts.push(gridOn ? (grid < 0 ? 'Einspeisung ' : 'Netzbezug ') + fmtW(Math.abs(grid)) : 'Netz 0 W');
@@ -280,7 +277,7 @@
     const inParts = [];
     if (net !== null && net < 0) inParts.push(['b-batout', -net]);
     inParts.push(['b-pv', pv], ['b-grid', grid]);
-    // Verwendung: Verbrauch, in den Akku (Netto-Ladung), Anlage
+    // Verwendung: Verbrauch, in den Akku (Netto-Ladung), Anlagenverluste
     const outParts = [['b-load', load]];
     if (net !== null && net > 0) outParts.push(['b-batin', net]);
     if (own !== null && own > 0) outParts.push(['b-sys', own]);
@@ -299,15 +296,15 @@
     if (net !== null && net < 0) inLegend.unshift(['sw-bat', 'aus dem Akku (netto)', -net]);
     const outLegend = [['sw-load', 'Verbrauch', load]];
     if (net !== null && net > 0) outLegend.push(['sw-bat', 'in den Akku (netto)', net]);
-    if (own !== null) outLegend.push(['sw-sys', 'Anlage (WR + Wandler)', own]);
-    if (!hasBat) outLegend.push(['sw-rest', 'Akku + Anlage (ohne Akku-Zähler)', Math.max(0, pv + grid - load)]);
+    if (own !== null) outLegend.push(['sw-sys', 'Anlagenverluste', own]);
+    if (!hasBat) outLegend.push(['sw-rest', 'Akku + Verluste (ohne Akku-Zähler)', Math.max(0, pv + grid - load)]);
     const li = legendItems(inLegend), lo = legendItems(outLegend);
     if ($('balInLegend')._html !== li) { $('balInLegend').innerHTML = li; $('balInLegend')._html = li; }
     if ($('balOutLegend')._html !== lo) { $('balOutLegend').innerHTML = lo; $('balOutLegend')._html = lo; }
 
     setText('balNote', hasBat
       ? 'Akku geladen ' + fmtKwh(bIn) + ' · entladen ' + fmtKwh(bOut) + (d.bilanz_plausibel_heute === false ? ' · ' + IMPLAUSIBLE + ': Bilanz geht nicht auf' : '')
-      : 'Ohne Akku-Zähler lassen sich Akku und Anlagen-Eigenverbrauch nicht trennen.');
+      : 'Ohne Akku-Zähler lassen sich Akku und Anlagenverluste nicht trennen.');
   }
 
   /* ---------- PV-Prognose ---------- */

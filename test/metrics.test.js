@@ -46,7 +46,7 @@ test('Zeit: lokale Mitternacht und Ankerzeiten folgen der Sommer-/Winterzeit', (
 test('Felder: zuerst alle der Beispielantwort in gleicher Reihenfolge, danach die Prognose-Ergaenzungen', () => {
     const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'reference', 'sample', 'pv-data.example.json'), 'utf8'));
     const out = m.computePayload(raw(), null, OPTS);
-    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w']]);
+    assert.deepEqual(Object.keys(out), [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w', 'system_own_woche_avg_kwh', 'system_own_season_avg_kwh', 'system_own_jahr_avg_kwh']]);
 });
 
 
@@ -264,6 +264,9 @@ test('Energiebilanz: unplausible Zaehler ergeben null und Hinweis statt gekappte
     assert.equal(out.system_own_season_kwh, 36);
     assert.equal(out.bilanz_plausibel_jahr, true);     // 198 - 90 - 6 = 102
     assert.equal(out.system_own_jahr_kwh, 102);
+    assert.equal(out.system_own_woche_avg_kwh, null);   // unplausibel
+    assert.equal(out.system_own_season_avg_kwh, 4);     // 36 kWh / 9 Tage
+    assert.equal(out.system_own_jahr_avg_kwh, 11.3);    // 102 kWh / 9 Tage
     assert.equal(m.computePayload(raw(), null, OPTS).bilanz_plausibel_woche, null);
 });
 

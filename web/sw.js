@@ -4,9 +4,13 @@
  * Service Worker: haelt die App-Huelle (HTML, CSS, JS, Manifest, Icons) offline vor.
  * Seiten: erst Netz, bei Fehler Cache. Statische Dateien: Cache, im Hintergrund
  * aktualisiert. /api/* wird nie gecacht (die Seite merkt sich den letzten Stand selbst).
+ *
+ * Der Server setzt beim Ausliefern die Inhalts-Versionen ein: Die Eintraege fuer
+ * app.css und app.js in SHELL erhalten ?v=<hash>, an CACHE wird ein Hash gehaengt.
+ * Neue Inhalte haben so neue Adressen und einen neuen Cache.
  */
 
-const CACHE = 'pv-shell-v6';
+const CACHE = 'pv-shell-v7';
 const SHELL = [
   '/',
   '/app.css',
@@ -19,7 +23,12 @@ const SHELL = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' umgeht den HTTP-Cache des Browsers, damit nur aktuelle Dateien in den Cache kommen
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL.map(url => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', event => {

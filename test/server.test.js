@@ -30,7 +30,7 @@ test('Mock-Modus: /api/pv liefert alle Felder der Beispielantwort mit passenden 
         assert.equal(res.status, 200);
         assert.equal(res.headers.get('access-control-allow-origin'), '*');
         const body = await res.json();
-        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w']];
+        const expected = [...Object.keys(sample), ...['forecast_today_kwh', 'forecast_today_remaining_kwh', 'forecast_tomorrow_peak_w', 'forecast_tomorrow_peak_ts', 'forecast_yesterday_kwh', 'actual_yesterday_kwh', 'smart_range_empty_ts', 'smart_range_min_kwh', 'smart_range_min_ts', 'smart_range_until_ts', 'smart_range_basis', 'daily_bat_in_kwh', 'daily_bat_out_kwh', 'system_own_woche_kwh', 'system_own_season_kwh', 'system_own_jahr_kwh', 'bilanz_plausibel_heute', 'bilanz_plausibel_woche', 'bilanz_plausibel_season', 'bilanz_plausibel_jahr', 'grid_w', 'system_own_woche_avg_kwh', 'system_own_season_avg_kwh', 'system_own_jahr_avg_kwh']];
         assert.deepEqual(Object.keys(body), expected);
         for (const [k, v] of Object.entries(sample)) {
             if (v === null || body[k] === null) continue;
@@ -78,6 +78,45 @@ test('Seite, Manifest, Service Worker und Icons werden ausgeliefert', async () =
         assert.match(sw.headers.get('content-type'), /javascript/);
         assert.equal(sw.headers.get('cache-control'), 'no-cache');
         assert.match(await sw.text(), /addEventListener\('fetch'/);
+    });
+});
+
+
+test('CSS und JS versioniert: neue Inhalte haben neue Adressen, Seite und SW passen zusammen', async () => {
+    const crypto = require('crypto');
+    const hash = file => crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, 'web', file))).digest('base64url').slice(0, 10);
+    await withMockApp(async base => {
+        const page = await fetch(base + '/');
+        assert.equal(page.headers.get('cache-control'), 'no-cache');
+        const html = await page.text();
+        const css = html.match(/href="\/app\.css\?v=([^"]+)"/);
+        const js = html.match(/src="\/app\.js\?v=([^"]+)"/);
+        assert.ok(css && js, 'index.html verweist auf versionierte Dateien');
+        assert.equal(css[1], hash('app.css'));
+        assert.equal(js[1], hash('app.js'));
+        assert.ok(!/"\/app\.(css|js)"/.test(html), 'keine unversionierten Verweise');
+
+        // versioniert: dauerhaft cachebar, gleicher Inhalt wie die Datei
+        const v = await fetch(base + '/app.js?v=' + js[1]);
+        assert.equal(v.status, 200);
+        assert.equal(v.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+        assert.equal(await v.text(), fs.readFileSync(path.join(ROOT, 'web', 'app.js'), 'utf8'));
+        // ohne oder mit fremder Version: immer revalidieren (kein Mischen alter und neuer Staende)
+        for (const url of ['/app.js', '/app.js?v=alt', '/app.css']) {
+            const r = await fetch(base + url);
+            assert.equal(r.headers.get('cache-control'), 'no-cache', url);
+            await r.text();
+        }
+
+        // Service Worker cacht genau diese Adressen, Cache-Name haengt vom Inhalt ab
+        const sw = await (await fetch(base + '/sw.js')).text();
+        assert.ok(sw.includes(`'/app.css?v=${css[1]}'`) && sw.includes(`'/app.js?v=${js[1]}'`));
+        assert.match(sw, /const CACHE = 'pv-shell-v\d+-[\w-]{8}';/);
+        assert.match(sw, /cache: 'reload'/);
+
+        const icon = await fetch(base + '/icons/icon.svg');
+        assert.equal(icon.headers.get('cache-control'), 'public, max-age=86400');
+        await icon.arrayBuffer();
     });
 });
 
